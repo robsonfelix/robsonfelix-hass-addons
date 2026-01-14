@@ -56,12 +56,9 @@ RUN mkdir -p \
 # Set up PATH
 ENV PATH="/root/.local/bin:${PATH}"
 
-# Copy s6-overlay service files
-COPY rootfs /
-
-# Fix line endings and permissions for s6 scripts
-RUN find /etc/s6-overlay -type f -exec sed -i 's/\r$//' {} \; && \
-    chmod +x /etc/s6-overlay/s6-rc.d/ttyd/run
+# Copy and setup run script
+COPY run.sh /run.sh
+RUN sed -i 's/\r$//' /run.sh && chmod 755 /run.sh
 
 # Set working directory
 WORKDIR /homeassistant
@@ -70,7 +67,6 @@ WORKDIR /homeassistant
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -sf http://localhost:7681/ || exit 1
 
-# Ensure /init is executable (fix permission issues)
-RUN chmod +x /init 2>/dev/null || true
-
-ENTRYPOINT ["/init"]
+# Skip s6-overlay, use direct execution
+ENTRYPOINT []
+CMD ["/bin/bash", "/run.sh"]
