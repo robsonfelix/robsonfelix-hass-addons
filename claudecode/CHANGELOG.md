@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.32] - 2026-01-14
+
+### Fixed
+- Added .profile to source .bashrc (tmux login shells need this for aliases)
+
 ## [1.2.31] - 2026-01-14
 
 ### Fixed

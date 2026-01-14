@@ -88,6 +88,9 @@ alias ha-config='cd /homeassistant'
 alias ha-logs='cat /homeassistant/home-assistant.log 2>/dev/null || echo "Log not found"'
 EOF
 
+# Ensure .bashrc is sourced for login shells too
+RUN echo 'source ~/.bashrc' > /root/.profile
+
 # Set up PATH
 ENV PATH="/root/.local/bin:${PATH}"
 
