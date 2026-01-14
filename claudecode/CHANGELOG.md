@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.21] - 2026-01-14
+
+### Reverted
+- Removed tmux mouse mode (breaks paste functionality)
+
 ## [1.2.20] - 2026-01-14
 
 ### Fixed

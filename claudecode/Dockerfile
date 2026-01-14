@@ -62,9 +62,6 @@ RUN mkdir -p \
     /root/.config \
     /root/.local/bin
 
-# Enable tmux mouse support for scrolling
-RUN echo "set -g mouse on" > /root/.tmux.conf
-
 # Set up PATH
 ENV PATH="/root/.local/bin:${PATH}"
 
