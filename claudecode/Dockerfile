@@ -62,6 +62,9 @@ RUN mkdir -p \
     /root/.config \
     /root/.local/bin
 
+# Configure tmux with large scrollback buffer
+RUN echo "set -g history-limit 20000" > /root/.tmux.conf
+
 # Set up PATH
 ENV PATH="/root/.local/bin:${PATH}"
 

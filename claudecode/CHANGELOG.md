@@ -2,10 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.23] - 2026-01-14
+
+### Added
+- Configure tmux with 20,000 line scrollback buffer (`history-limit`)
+- Use `Ctrl+b [` then arrow keys/Page Up/Down to scroll in tmux
+
 ## [1.2.22] - 2026-01-14
 
 ### Added
-- Increased terminal scrollback buffer to 20,000 lines
+- Increased terminal scrollback buffer to 20,000 lines (xterm.js)
 
 ## [1.2.21] - 2026-01-14
 
