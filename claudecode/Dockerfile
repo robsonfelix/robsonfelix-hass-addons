@@ -56,12 +56,10 @@ RUN npm install -g @anthropic-ai/claude-code
 # Install hass-mcp for Home Assistant integration
 RUN pip3 install --no-cache-dir --break-system-packages hass-mcp
 
-# Create necessary directories
+# Create necessary directories (NOT /root/.claude - will be symlinked at runtime)
 RUN mkdir -p \
-    /data \
     /homeassistant \
-    /root/.claude \
-    /root/.config/claude-code \
+    /root/.config \
     /root/.local/bin
 
 # Set up PATH
@@ -75,13 +73,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -sf http://localhost:7681/ || exit 1
 
 # Startup script that reads config and persists Claude auth
+# Use /homeassistant/.claudecode which is always persistent
 ENTRYPOINT []
 CMD ["/bin/bash", "-c", "\
-  mkdir -p /data/claude /data/claude-config && \
-  rm -rf /root/.claude /root/.config/claude-code && \
-  mkdir -p /root/.config && \
-  ln -sf /data/claude /root/.claude && \
-  ln -sf /data/claude-config /root/.config/claude-code && \
+  PERSIST=/homeassistant/.claudecode && \
+  mkdir -p $PERSIST/config /root/.config && \
+  if [ ! -L /root/.claude ]; then rm -rf /root/.claude; ln -s $PERSIST /root/.claude; fi && \
+  if [ ! -L /root/.config/claude-code ]; then rm -rf /root/.config/claude-code; ln -s $PERSIST/config /root/.config/claude-code; fi && \
   FONT_SIZE=$(jq -r '.terminal_font_size // 14' /data/options.json) && \
   THEME=$(jq -r '.terminal_theme // \"dark\"' /data/options.json) && \
   PERSIST=$(jq -r '.session_persistence // true' /data/options.json) && \

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.19] - 2026-01-14
+
+### Fixed
+- Store Claude Code data in /homeassistant/.claudecode (truly persistent)
+- Survives addon uninstall/reinstall/rebuild
+- Symlink ~/.claude and ~/.config/claude-code to HA config directory
+
 ## [1.2.18] - 2026-01-14
 
 ### Changed
