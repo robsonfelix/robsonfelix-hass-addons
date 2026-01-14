@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.31] - 2026-01-14
+
+### Fixed
+- Version bump to force rebuild (1.2.30 may have been cached before alias fix)
+
 ## [1.2.30] - 2026-01-14
 
 ### Changed
