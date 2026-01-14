@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.29] - 2026-01-14
+
+### Fixed
+- hass-mcp expects `HA_URL` not `HA_HOST`
+
 ## [1.2.28] - 2026-01-14
 
 ### Changed

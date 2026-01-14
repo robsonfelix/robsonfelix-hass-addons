@@ -89,7 +89,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
 ENTRYPOINT []
 CMD ["/bin/bash", "-c", "\
   export HA_TOKEN=\"$SUPERVISOR_TOKEN\" && \
-  export HA_HOST=\"http://supervisor/core\" && \
+  export HA_URL=\"http://supervisor/core\" && \
   PERSIST_DIR=/homeassistant/.claudecode && \
   mkdir -p $PERSIST_DIR/config /root/.config && \
   if [ ! -L /root/.claude ]; then rm -rf /root/.claude; ln -s $PERSIST_DIR /root/.claude; fi && \
