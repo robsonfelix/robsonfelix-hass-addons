@@ -62,6 +62,9 @@ RUN mkdir -p \
     /root/.config \
     /root/.local/bin
 
+# Enable tmux mouse support for scrolling
+RUN echo "set -g mouse on" > /root/.tmux.conf
+
 # Set up PATH
 ENV PATH="/root/.local/bin:${PATH}"
 
@@ -80,6 +83,7 @@ CMD ["/bin/bash", "-c", "\
   mkdir -p $PERSIST/config /root/.config && \
   if [ ! -L /root/.claude ]; then rm -rf /root/.claude; ln -s $PERSIST /root/.claude; fi && \
   if [ ! -L /root/.config/claude-code ]; then rm -rf /root/.config/claude-code; ln -s $PERSIST/config /root/.config/claude-code; fi && \
+  if [ ! -L /root/.claude.json ]; then touch $PERSIST/.claude.json; rm -f /root/.claude.json; ln -s $PERSIST/.claude.json /root/.claude.json; fi && \
   FONT_SIZE=$(jq -r '.terminal_font_size // 14' /data/options.json) && \
   THEME=$(jq -r '.terminal_theme // \"dark\"' /data/options.json) && \
   PERSIST=$(jq -r '.session_persistence // true' /data/options.json) && \

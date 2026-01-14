@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.20] - 2026-01-14
+
+### Fixed
+- Persist /root/.claude.json file (stores theme/onboarding state)
+- Enable tmux mouse support for scroll wheel (`set -g mouse on`)
+
 ## [1.2.19] - 2026-01-14
 
 ### Fixed
