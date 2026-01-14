@@ -1,6 +1,6 @@
 name: Claude Code
 description: Run Claude Code AI assistant inside Home Assistant to create automations, debug issues, and manage your smart home configuration
-version: "1.1.0"
+version: "1.2.0"
 slug: claudecode
 url: https://github.com/robsonfelix/claudecode-hass-integration
 arch:
@@ -28,16 +28,12 @@ map:
   - addon_config:rw
   - backup:ro
 options:
-  anthropic_api_key: ""
-  model: claude-sonnet-4-20250514
   enable_mcp: true
   terminal_font_size: 14
   terminal_theme: dark
   working_directory: /homeassistant
   session_persistence: true
 schema:
-  anthropic_api_key: str
-  model: str
   enable_mcp: bool
   terminal_font_size: int(10,24)
   terminal_theme: list(dark|light)

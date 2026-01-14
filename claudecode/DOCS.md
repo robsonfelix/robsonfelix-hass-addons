@@ -10,35 +10,33 @@ This add-on provides Claude Code, Anthropic's AI-powered coding assistant, direc
 - **Session Persistence**: Optional tmux integration to preserve sessions across page refreshes
 - **Customizable Theme**: Choose between dark and light terminal themes
 - **Multi-Architecture**: Supports amd64, aarch64, armv7, armhf, and i386
+- **Secure Authentication**: Claude Code handles its own authentication securely
 
 ## Setup
 
-### 1. Get an Anthropic API Key
+### 1. Install the Add-on
 
-1. Visit [Anthropic Console](https://console.anthropic.com/)
-2. Create an account or sign in
-3. Generate an API key
-4. Copy the key for the next step
+1. Add the repository to Home Assistant
+2. Install the "Claude Code" add-on
+3. Start the add-on
+4. Open the Web UI from the sidebar
 
-### 2. Configure the Add-on
+### 2. Authenticate with Claude Code
 
-1. Go to **Settings** > **Add-ons** > **Claude Code**
-2. Click the **Configuration** tab
-3. Enter your Anthropic API key
-4. Adjust other settings as needed
-5. Click **Save**
+On first launch, Claude Code will prompt you to authenticate:
 
-### 3. Start the Add-on
+1. Open the terminal from the HA sidebar
+2. Type `claude` to start
+3. Follow the authentication prompts
+4. Your credentials are stored securely by Claude Code
 
-1. Click **Start**
-2. Wait for the add-on to initialize
-3. Click **Open Web UI** or access via the sidebar
+**Note**: The add-on does NOT require you to enter API keys in the configuration. Claude Code handles authentication itself, storing credentials securely in its own configuration directory. This is more secure than storing keys in Home Assistant's add-on config.
 
 ## Using Claude Code
 
 ### Basic Usage
 
-Once started, you'll see a terminal interface. Claude Code is ready to help with:
+Once authenticated, Claude Code is ready to help with:
 
 - Editing Home Assistant YAML configurations
 - Creating automations and scripts
@@ -82,21 +80,11 @@ claude --continue
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `anthropic_api_key` | Your Anthropic API key | (empty) |
-| `model` | Claude model to use | claude-sonnet-4-20250514 |
 | `enable_mcp` | Enable HA integration | true |
 | `terminal_font_size` | Font size (10-24) | 14 |
 | `terminal_theme` | dark or light | dark |
 | `working_directory` | Start directory | /homeassistant |
 | `session_persistence` | Use tmux for persistent sessions | true |
-
-### Model Options
-
-You can use different Claude models by changing the `model` setting:
-
-- `claude-sonnet-4-20250514` (default) - Fast and capable
-- `claude-opus-4-20250514` - Most capable, best for complex tasks
-- `claude-haiku-3-5-20241022` - Fastest, good for simple tasks
 
 ## File Locations
 
@@ -126,20 +114,26 @@ If you're new to tmux:
 | `Ctrl+b [` | Enter scroll mode (use arrow keys) |
 | `q` | Exit scroll mode |
 
-## Security Notes
+## Security
 
-- Your API key is stored securely in Home Assistant's encrypted add-on configuration
+### Authentication
+- **No API keys in add-on config**: Claude Code handles authentication itself
+- Credentials are stored securely in Claude Code's own directory (`~/.claude/`)
+- This is more secure than storing keys in Home Assistant's configuration
+
+### Container Security
 - The Supervisor token is automatically managed and not exposed
 - File access is limited to mapped directories
 - The add-on runs in an isolated container
 
 ## Troubleshooting
 
-### "API key not configured" warning
+### Authentication issues
 
-Either:
-1. Enter your API key in the add-on configuration, or
-2. Authenticate interactively when Claude Code prompts you
+Claude Code manages its own authentication. If you have issues:
+1. Type `claude` to start the authentication flow
+2. Follow the prompts to log in or enter your API key
+3. Credentials are saved automatically for future sessions
 
 ### hass-mcp not working
 

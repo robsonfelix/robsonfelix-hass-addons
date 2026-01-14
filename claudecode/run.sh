@@ -15,8 +15,6 @@ set -e
 CONFIG_PATH="/data/options.json"
 
 # Read configuration values using bashio
-ANTHROPIC_API_KEY=$(bashio::config 'anthropic_api_key')
-MODEL=$(bashio::config 'model')
 ENABLE_MCP=$(bashio::config 'enable_mcp')
 TERMINAL_FONT_SIZE=$(bashio::config 'terminal_font_size')
 TERMINAL_THEME=$(bashio::config 'terminal_theme')
@@ -26,12 +24,6 @@ SESSION_PERSISTENCE=$(bashio::config 'session_persistence')
 # -----------------------------------------------------------------------------
 # Validation
 # -----------------------------------------------------------------------------
-
-if [[ -z "${ANTHROPIC_API_KEY}" ]]; then
-    bashio::log.warning "Anthropic API key is not configured!"
-    bashio::log.warning "Claude Code will prompt for authentication on first use."
-    bashio::log.warning "Configure the API key in add-on settings for persistent access."
-fi
 
 # Verify working directory exists
 if [[ ! -d "${WORKING_DIR}" ]]; then
@@ -49,8 +41,6 @@ fi
 # Environment Setup
 # -----------------------------------------------------------------------------
 
-export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
-export CLAUDE_MODEL="${MODEL}"
 export HOME=/root
 export TERM=xterm-256color
 export LANG=C.UTF-8
@@ -141,10 +131,6 @@ if [ -f ~/.bashrc ]; then
     . ~/.bashrc
 fi
 
-# Export API key
-export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
-export CLAUDE_MODEL="${MODEL}"
-
 # Welcome message
 clear
 echo ""
@@ -152,7 +138,6 @@ echo "╔═══════════════════════�
 echo "║           Claude Code for Home Assistant                      ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "  Model: ${MODEL}"
 echo "  Working directory: ${WORKING_DIR}"
 EOF
 
@@ -165,15 +150,15 @@ EOF
     cat >> /root/.profile << 'EOF'
 echo ""
 echo "  Quick start:"
-echo "    claude              - Start interactive session"
-echo "    claude \"<prompt>\"   - Run a single command"
+echo "    claude              - Start interactive session (login on first use)"
+echo "    claude "<prompt>"   - Run a single command"
 echo "    claude --continue   - Continue last conversation"
 echo ""
 echo "  Shortcuts:"
 echo "    c    = claude"
 echo "    cc   = claude --continue"
 echo ""
-echo "══════════════════════════════════════════════════════════════"
+echo "═══════════════════════════════════════════════════════════════"
 echo ""
 EOF
 }
@@ -188,12 +173,14 @@ main() {
     bashio::log.info "========================================"
     bashio::log.info ""
     bashio::log.info "Configuration:"
-    bashio::log.info "  Model: ${MODEL}"
     bashio::log.info "  MCP enabled: ${ENABLE_MCP}"
     bashio::log.info "  Working directory: ${WORKING_DIR}"
     bashio::log.info "  Terminal theme: ${TERMINAL_THEME}"
     bashio::log.info "  Font size: ${TERMINAL_FONT_SIZE}"
     bashio::log.info "  Session persistence: ${SESSION_PERSISTENCE}"
+    bashio::log.info ""
+    bashio::log.info "Note: Claude Code will prompt for authentication on first use."
+    bashio::log.info "Your credentials are stored securely by Claude Code itself."
     bashio::log.info ""
 
     # Setup configurations

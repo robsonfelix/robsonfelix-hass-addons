@@ -1,15 +1,4 @@
 configuration:
-  anthropic_api_key:
-    name: Anthropic API Key
-    description: >-
-      Your Anthropic API key for Claude Code authentication.
-      Get one at https://console.anthropic.com/
-      Leave empty to authenticate interactively on first use.
-  model:
-    name: Claude Model
-    description: >-
-      The Claude model to use. Options include claude-sonnet-4-20250514 (default, fast),
-      claude-opus-4-20250514 (most capable), or claude-haiku-3-5-20241022 (fastest).
   enable_mcp:
     name: Enable Home Assistant MCP
     description: >-

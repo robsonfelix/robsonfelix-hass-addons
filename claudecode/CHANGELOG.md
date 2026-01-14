@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2025-01-14
+
+### Changed
+- **Security improvement**: Removed API key from add-on config - Claude Code now handles authentication itself
+- Simplified Dockerfile - use Alpine's ttyd package instead of architecture-specific downloads
+- Removed model selection from config (Claude Code manages this)
+
+### Fixed
+- Docker build failure due to BUILD_ARCH variable not being passed correctly
+
 ## [1.1.0] - 2025-01-14
 
 ### Added

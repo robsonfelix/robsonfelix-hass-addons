@@ -1,9 +1,6 @@
 ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
-# Build arguments
-ARG BUILD_ARCH
-
 # Labels
 LABEL maintainer="Robson Felix"
 LABEL org.opencontainers.image.title="Claude Code for Home Assistant"
@@ -19,7 +16,7 @@ ENV \
     S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
     S6_CMD_WAIT_FOR_SERVICES_MAXTIME=0
 
-# Install system dependencies
+# Install system dependencies including ttyd from Alpine packages
 RUN apk add --no-cache \
     bash \
     curl \
@@ -43,22 +40,8 @@ RUN apk add --no-cache \
     ca-certificates \
     openssl \
     ripgrep \
+    ttyd \
     && update-ca-certificates
-
-# Install ttyd based on architecture
-RUN set -eux; \
-    TTYD_VERSION="1.7.7"; \
-    case "${BUILD_ARCH}" in \
-        amd64) TTYD_ARCH="x86_64" ;; \
-        aarch64) TTYD_ARCH="aarch64" ;; \
-        armv7|armhf) TTYD_ARCH="armhf" ;; \
-        i386) TTYD_ARCH="i686" ;; \
-        *) echo "Unsupported architecture: ${BUILD_ARCH}" && exit 1 ;; \
-    esac; \
-    curl -fsSL "https://github.com/tsl0922/ttyd/releases/download/${TTYD_VERSION}/ttyd.${TTYD_ARCH}" \
-        -o /usr/local/bin/ttyd || \
-    (apk add --no-cache ttyd); \
-    chmod +x /usr/local/bin/ttyd 2>/dev/null || true
 
 # Install Claude Code via npm
 RUN npm install -g @anthropic-ai/claude-code
