@@ -190,6 +190,8 @@ CMD ["/bin/bash", "-c", "\
   SESSION_PERSIST=$(jq -r '.session_persistence // true' /data/options.json) && \
   ENABLE_MCP=$(jq -r '.enable_mcp // true' /data/options.json) && \
   ENABLE_PLAYWRIGHT=$(jq -r '.enable_playwright_mcp // false' /data/options.json) && \
+  PLAYWRIGHT_HOST=$(jq -r '.playwright_cdp_host // \"\"' /data/options.json) && \
+  if [ -z \"$PLAYWRIGHT_HOST\" ]; then PLAYWRIGHT_HOST=\"playwright-browser\"; fi && \
   AUTO_UPDATE=$(jq -r '.auto_update_claude // true' /data/options.json) && \
   if [ \"$AUTO_UPDATE\" = \"true\" ]; then \
     echo '[INFO] Checking for Claude Code updates...' && \
@@ -208,8 +210,8 @@ CMD ["/bin/bash", "-c", "\
     echo '[INFO] MCP disabled'; \
   fi && \
   if [ \"$ENABLE_PLAYWRIGHT\" = \"true\" ]; then \
-    claude mcp add-json playwright '{\"command\":\"npx\",\"args\":[\"-y\",\"@playwright/mcp\",\"--cdp-endpoint\",\"ws://playwright-browser:9222\"]}' -s user && \
-    echo '[INFO] Playwright MCP enabled (connecting to Playwright Browser add-on)'; \
+    claude mcp add-json playwright \"{\\\"command\\\":\\\"npx\\\",\\\"args\\\":[\\\"-y\\\",\\\"@playwright/mcp\\\",\\\"--cdp-endpoint\\\",\\\"ws://${PLAYWRIGHT_HOST}:9222\\\"]}\" -s user && \
+    echo \"[INFO] Playwright MCP enabled (CDP: ws://${PLAYWRIGHT_HOST}:9222)\"; \
     echo '[INFO] Make sure the Playwright Browser add-on is installed and running'; \
   else \
     echo '[INFO] Playwright MCP disabled'; \

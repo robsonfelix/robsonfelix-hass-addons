@@ -12,6 +12,12 @@ configuration:
       add-on "Playwright Browser" instalado e em execução. Permite que o Claude
       navegue em páginas web, preencha formulários, clique em elementos e tire
       screenshots.
+  playwright_cdp_host:
+    name: Host CDP do Playwright
+    description: >-
+      Nome do host do add-on Playwright Browser para conexão CDP. Deixe vazio
+      para o padrão (playwright-browser). Se a conexão falhar, verifique o
+      nome do host do container Playwright Browser (ex: 1016f397-playwright-browser).
   terminal_font_size:
     name: Tamanho da Fonte do Terminal
     description: >-

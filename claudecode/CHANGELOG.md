@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.51] - 2026-01-15
+
+### Added
+- Configurable `playwright_cdp_host` option for custom Playwright Browser hostname
+- Useful when default hostname doesn't resolve (e.g., use `1016f397-playwright-browser`)
+
 ## [1.2.50] - 2026-01-15
 
 ### Fixed

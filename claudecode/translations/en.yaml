@@ -11,6 +11,12 @@ configuration:
       Enable the Playwright MCP server for browser automation. Requires the
       "Playwright Browser" add-on to be installed and running. Allows Claude to
       navigate web pages, fill forms, click elements, and take screenshots.
+  playwright_cdp_host:
+    name: Playwright CDP Host
+    description: >-
+      Hostname of the Playwright Browser add-on for CDP connection. Leave empty
+      for default (playwright-browser). If connection fails, check the Playwright
+      Browser container hostname (e.g., 1016f397-playwright-browser).
   terminal_font_size:
     name: Terminal Font Size
     description: >-

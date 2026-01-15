@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-01-15
+
+### Changed
+- Upgraded to Playwright v1.57.0 (from v1.50.0)
+
 ## [0.1.3] - 2026-01-15
 
 ### Changed
