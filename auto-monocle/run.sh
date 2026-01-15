@@ -18,21 +18,18 @@ if [ -z "$MONOCLE_TOKEN" ] || [ "$MONOCLE_TOKEN" = "null" ]; then
     exit 1
 fi
 
-# Run initial camera discovery if enabled
-if [ "$AUTO_DISCOVER" = "true" ]; then
-    bashio::log.info "Running camera discovery..."
-    python3 /opt/monocle/discover_cameras.py
+# Run camera discovery (also writes token file)
+bashio::log.info "Running camera discovery..."
+python3 /opt/monocle/discover_cameras.py
 
-    if [ ! -f "$MONOCLE_CONFIG" ]; then
-        bashio::log.error "Monocle configuration not generated!"
-        exit 1
-    fi
+if [ ! -f "/etc/monocle/monocle.token" ]; then
+    bashio::log.error "Monocle token file not created!"
+    exit 1
+fi
 
-    bashio::log.info "Monocle configuration:"
-    cat "$MONOCLE_CONFIG"
-    echo ""
-else
-    bashio::log.info "Auto-discovery disabled, using manual configuration"
+if [ "$AUTO_DISCOVER" = "true" ] && [ ! -f "$MONOCLE_CONFIG" ]; then
+    bashio::log.error "Monocle configuration not generated!"
+    exit 1
 fi
 
 # Get initial config hash

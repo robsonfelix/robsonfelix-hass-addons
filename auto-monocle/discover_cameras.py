@@ -98,12 +98,9 @@ def discover_cameras(filters: List[str] = None) -> List[Dict]:
 
     return cameras
 
-def generate_monocle_config(cameras: List[Dict], monocle_token: str) -> Dict:
-    """Generate Monocle Gateway configuration."""
+def generate_monocle_config(cameras: List[Dict]) -> Dict:
+    """Generate Monocle Gateway configuration (cameras only, token is separate file)."""
     config = {
-        "monocle": {
-            "token": monocle_token
-        },
         "cameras": []
     }
 
@@ -121,12 +118,19 @@ def generate_monocle_config(cameras: List[Dict], monocle_token: str) -> Dict:
 
     return config
 
+def write_monocle_token(token: str, path: str = "/etc/monocle/monocle.token"):
+    """Write Monocle API token to file (required by gateway)."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(token)
+    print(f"[INFO] Wrote Monocle token file")
+
 def write_monocle_config(config: Dict, path: str = "/etc/monocle/monocle.json"):
     """Write Monocle configuration to file."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(config, f, indent=2)
-    print(f"[INFO] Wrote Monocle config to {path}")
+    print(f"[INFO] Wrote Monocle config with {len(config.get('cameras', []))} cameras")
 
 def main():
     """Main entry point."""
@@ -152,11 +156,14 @@ def main():
 
     print("[INFO] Starting camera discovery...")
 
+    # Always write the token file (required by gateway)
+    write_monocle_token(monocle_token)
+
     if auto_discover:
         cameras = discover_cameras(camera_filters if camera_filters else None)
         print(f"[INFO] Discovered {len(cameras)} cameras")
 
-        config = generate_monocle_config(cameras, monocle_token)
+        config = generate_monocle_config(cameras)
         write_monocle_config(config)
     else:
         print("[INFO] Auto-discovery disabled")

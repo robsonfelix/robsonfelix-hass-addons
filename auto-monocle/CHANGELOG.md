@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-01-14
+
+### Fixed
+- Write token to monocle.token file (required by gateway)
+- Remove token from JSON config and logs (security)
+- Don't print config file to logs
+
 ## [0.1.4] - 2026-01-14
 
 ### Fixed

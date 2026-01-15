@@ -1,6 +1,6 @@
 name: Auto-Monocle
 description: Auto-discover HA cameras and expose them to Alexa via Monocle Gateway
-version: "0.1.4"
+version: "0.1.5"
 slug: auto-monocle
 url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
