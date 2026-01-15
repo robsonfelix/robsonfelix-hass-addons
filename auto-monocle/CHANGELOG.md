@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.9] - 2026-01-14
+
+### Added
+- `stream_quality` option: choose between "high", "medium", or "low" resolution streams
+
+### Fixed
+- Read config entries and entity registry from HA storage files (API doesn't expose sensitive data)
+- UniFi Protect: Extract camera MAC addresses from entity registry unique_ids
+- UniFi Protect: Construct proper RTSP URLs with format `rtsps://NVR:7441/MAC?channel=N`
+- Use device names from device registry (pretty names like "Gourmet", "Entrada central")
+- Improved matching logic using entity_id instead of fuzzy name matching
+
 ## [0.1.7] - 2026-01-14
 
 ### Added

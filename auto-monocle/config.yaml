@@ -1,6 +1,6 @@
 name: Auto-Monocle
 description: Auto-discover HA cameras and expose them to Alexa via Monocle Gateway
-version: "0.1.8"
+version: "0.1.9"
 slug: auto-monocle
 url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
@@ -21,11 +21,13 @@ options:
   monocle_token: ""
   auto_discover: true
   refresh_interval: 300
+  stream_quality: "high"
   camera_filters: []
 schema:
   monocle_token: str
   auto_discover: bool
   refresh_interval: int(60,3600)
+  stream_quality: list(high|medium|low)
   camera_filters:
     - str?
 ports:

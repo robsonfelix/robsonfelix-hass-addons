@@ -3,7 +3,7 @@
 Auto-discover cameras from Home Assistant and generate Monocle configuration.
 Supports multiple discovery methods:
 1. go2rtc streams (HA built-in or standalone)
-2. UniFi Protect integration (construct RTSP URLs)
+2. UniFi Protect integration (construct RTSP URLs from storage files)
 3. Generic camera stream_source attributes
 """
 
@@ -15,6 +15,9 @@ from typing import Dict, List, Optional, Tuple
 
 SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN")
 HA_URL = "http://supervisor/core"
+
+# HA storage paths (mapped as homeassistant_config:ro)
+HA_STORAGE_PATH = "/homeassistant/.storage"
 
 def api_get(endpoint: str, timeout: int = 10) -> Optional[Dict]:
     """Make authenticated GET request to HA API."""
@@ -28,6 +31,17 @@ def api_get(endpoint: str, timeout: int = 10) -> Optional[Dict]:
             return response.json()
     except Exception as e:
         print(f"[DEBUG] API error {endpoint}: {e}")
+    return None
+
+
+def read_storage_file(filename: str) -> Optional[Dict]:
+    """Read HA storage file directly (more reliable than API for some data)."""
+    filepath = os.path.join(HA_STORAGE_PATH, filename)
+    try:
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"[DEBUG] Storage file error {filename}: {e}")
     return None
 
 
@@ -73,30 +87,36 @@ def get_go2rtc_streams() -> Dict[str, str]:
 
 
 # =============================================================================
-# Method 2: UniFi Protect integration
+# Method 2: UniFi Protect integration (reads from HA storage files)
 # =============================================================================
 
 def get_unifi_protect_config() -> Optional[Tuple[str, int]]:
-    """Get UniFi Protect NVR IP from config entries."""
-    entries = api_get("/api/config/config_entries/entry")
+    """Get UniFi Protect NVR IP from config entries (storage file or API)."""
+
+    # Try reading from storage file first (more reliable - contains full data)
+    config_data = read_storage_file("core.config_entries")
+    if config_data:
+        entries = config_data.get("data", {}).get("entries", [])
+        print(f"[DEBUG] Read {len(entries)} config entries from storage")
+    else:
+        # Fall back to API
+        entries = api_get("/api/config/config_entries/entry") or []
+        print(f"[DEBUG] Got {len(entries)} config entries from API")
+
     if not entries:
-        print("[DEBUG] Config entries API returned nothing")
+        print("[DEBUG] No config entries found")
         return None
 
-    # Debug: show all integration domains
-    domains = set(entry.get("domain", "") for entry in entries)
-    print(f"[DEBUG] Found integrations: {sorted(domains)}")
-
-    # Look for UniFi Protect (try various domain names)
-    unifi_domains = ["unifiprotect", "unifi_protect", "ubiquiti_unifi_protect", "unifi"]
+    # Look for UniFi Protect
+    unifi_domains = ["unifiprotect", "unifi_protect", "ubiquiti_unifi_protect"]
     for entry in entries:
         domain = entry.get("domain", "")
-        if domain in unifi_domains or "unifi" in domain.lower() or "protect" in domain.lower():
-            print(f"[DEBUG] Found potential UniFi entry: domain={domain}")
-            print(f"[DEBUG]   data keys: {list(entry.get('data', {}).keys())}")
+        if domain in unifi_domains or "protect" in domain.lower():
+            print(f"[DEBUG] Found UniFi Protect entry: domain={domain}")
             data = entry.get("data", {})
             host = data.get("host") or data.get("ip") or data.get("address")
-            port = data.get("port", 7441)
+            # RTSP port is 7441 for secure, 7447 for insecure
+            port = 7441
             if host:
                 print(f"[INFO] Found UniFi Protect NVR: {host}:{port}")
                 return (host, port)
@@ -104,49 +124,88 @@ def get_unifi_protect_config() -> Optional[Tuple[str, int]]:
     print("[DEBUG] No UniFi Protect config entry found")
     return None
 
-def get_unifi_camera_ids() -> Dict[str, str]:
-    """Get UniFi Protect camera IDs from device registry."""
-    camera_ids = {}
 
-    # Get device registry
-    devices = api_get("/api/config/device_registry")
-    if not devices:
-        print("[DEBUG] Device registry API returned nothing")
-        return camera_ids
+def get_unifi_camera_info_from_entities(stream_quality: str = "high") -> Dict[str, Dict]:
+    """Get UniFi camera MAC addresses from entity registry, with device names from device registry.
 
-    print(f"[DEBUG] Device registry has {len(devices)} devices")
+    Args:
+        stream_quality: "high" (channel 0), "medium" (channel 1), or "low" (channel 2)
+    """
+    cameras = {}
 
-    # Debug: show first few device identifier prefixes
-    id_prefixes = set()
-    for device in devices[:50]:
-        identifiers = device.get("identifiers", [])
-        for identifier in identifiers:
-            if isinstance(identifier, list) and len(identifier) >= 1:
-                id_prefixes.add(identifier[0])
-    print(f"[DEBUG] Device identifier prefixes: {sorted(id_prefixes)}")
+    # Map quality to channel number
+    quality_to_channel = {"high": "0", "medium": "1", "low": "2"}
+    target_channel = quality_to_channel.get(stream_quality, "0")
+    print(f"[INFO] Using stream quality: {stream_quality} (channel {target_channel})")
 
-    # Look for UniFi devices (try various identifier prefixes)
-    unifi_prefixes = ["unifiprotect", "unifi_protect", "ubiquiti", "unifi"]
-    for device in devices:
-        identifiers = device.get("identifiers", [])
-        for identifier in identifiers:
-            if isinstance(identifier, list) and len(identifier) >= 2:
-                prefix = identifier[0].lower() if isinstance(identifier[0], str) else ""
-                if any(p in prefix for p in unifi_prefixes) or "unifi" in prefix or "protect" in prefix:
-                    camera_id = identifier[1]
-                    name = device.get("name_by_user") or device.get("name", "")
-                    model = device.get("model", "")
-                    # Only add cameras (not NVR or other devices)
-                    if name and camera_id and ("camera" in model.lower() or "g4" in model.lower() or "g5" in model.lower() or "doorbell" in model.lower()):
-                        camera_ids[name] = camera_id
-                        print(f"[DEBUG] UniFi camera: {name} ({model}) -> {camera_id}")
-                    elif name:
-                        print(f"[DEBUG] UniFi device (not camera): {name} ({model})")
+    # Read device registry to get pretty names (name_by_user or name)
+    device_names = {}
+    device_data = read_storage_file("core.device_registry")
+    if device_data:
+        devices = device_data.get("data", {}).get("devices", [])
+        for dev in devices:
+            dev_id = dev.get("id")
+            # name_by_user is the user's custom alias, name is the original device name
+            name = dev.get("name_by_user") or dev.get("name")
+            if dev_id and name:
+                device_names[dev_id] = name
+        print(f"[DEBUG] Loaded {len(device_names)} device names")
 
-    return camera_ids
+    # Read entity registry from storage
+    entity_data = read_storage_file("core.entity_registry")
+    if not entity_data:
+        print("[DEBUG] Could not read entity registry")
+        return cameras
 
-def get_unifi_rtsp_urls() -> Dict[str, str]:
-    """Construct RTSP URLs for UniFi Protect cameras."""
+    entities = entity_data.get("data", {}).get("entities", [])
+    print(f"[DEBUG] Read {len(entities)} entities from registry")
+
+    # Track which MACs we've already added (to avoid duplicates across quality levels)
+    seen_macs = set()
+
+    for ent in entities:
+        entity_id = ent.get("entity_id", "")
+        platform = ent.get("platform", "")
+        unique_id = ent.get("unique_id", "")
+
+        # Look for UniFi Protect camera entities
+        if (entity_id.startswith("camera.") and
+            "unifi" in platform.lower() and
+            f"_{target_channel}" in unique_id and  # Match target quality channel
+            "_insecure" not in unique_id):  # Skip insecure duplicates
+
+            # unique_id format: "MAC_channel" e.g. "68D79AE248C8_0"
+            parts = unique_id.rsplit("_", 1)
+            if len(parts) == 2:
+                mac = parts[0]
+                channel = parts[1]
+
+                # Skip if we already have this MAC (handles duplicate entity registrations)
+                if mac in seen_macs:
+                    continue
+                seen_macs.add(mac)
+
+                # Get device name from device registry (the pretty name like "Garagem E9")
+                device_id = ent.get("device_id")
+                name = device_names.get(device_id)
+
+                # Fallback to entity_id if no device name found
+                if not name:
+                    name = entity_id.replace("camera.", "").replace("_high", "").replace("_medium", "").replace("_low", "").replace("_", " ").title()
+
+                cameras[entity_id] = {
+                    "entity_id": entity_id,
+                    "name": name,
+                    "mac": mac,
+                    "channel": channel
+                }
+                print(f"[DEBUG] Found UniFi camera: {name} (MAC: {mac})")
+
+    return cameras
+
+
+def get_unifi_rtsp_urls(stream_quality: str = "high") -> Dict[str, str]:
+    """Construct RTSP URLs for UniFi Protect cameras using entity registry."""
     urls = {}
 
     nvr_config = get_unifi_protect_config()
@@ -155,13 +214,18 @@ def get_unifi_rtsp_urls() -> Dict[str, str]:
         return urls
 
     host, port = nvr_config
-    camera_ids = get_unifi_camera_ids()
+    cameras = get_unifi_camera_info_from_entities(stream_quality)
 
-    for name, camera_id in camera_ids.items():
-        # UniFi Protect RTSP URL format
-        # rtsps for secure (port 7441), rtsp for insecure (port 7447)
-        rtsp_url = f"rtsps://{host}:{port}/{camera_id}"
-        urls[name] = rtsp_url
+    for entity_id, cam_info in cameras.items():
+        mac = cam_info["mac"]
+        channel = cam_info["channel"]
+        name = cam_info["name"]
+
+        # UniFi Protect RTSP URL format:
+        # rtsps://NVR_IP:7441/MAC_ADDRESS?channel=N
+        # channel 0 = high, 1 = medium, 2 = low
+        rtsp_url = f"rtsps://{host}:{port}/{mac}?channel={channel}"
+        urls[entity_id] = rtsp_url
         print(f"[INFO] UniFi RTSP: {name} -> {rtsp_url}")
 
     return urls
@@ -202,12 +266,16 @@ def get_stream_url_from_attributes(state: Dict) -> Optional[str]:
 # Main discovery logic
 # =============================================================================
 
-def discover_cameras(filters: List[str] = None) -> List[Dict]:
+def discover_cameras(filters: List[str] = None, stream_quality: str = "high") -> List[Dict]:
     """
     Discover cameras using multiple methods:
     1. go2rtc streams
     2. UniFi Protect integration
     3. Camera entity attributes
+
+    Args:
+        filters: List of filter strings to match camera names/entity_ids
+        stream_quality: "high", "medium", or "low" for UniFi cameras
     """
     discovered = {}  # name -> {entity_id, name, stream_url}
 
@@ -257,19 +325,27 @@ def discover_cameras(filters: List[str] = None) -> List[Dict]:
                 print(f"[INFO] Matched go2rtc stream '{stream_name}' to {entity_id}")
                 break
 
-    # Method 2: Try UniFi Protect
+    # Method 2: Try UniFi Protect (uses entity_id as key)
     print("[INFO] Checking UniFi Protect integration...")
-    unifi_urls = get_unifi_rtsp_urls()
-    for name, rtsp_url in unifi_urls.items():
-        # Try to match UniFi camera to HA entity
-        for entity_id, camera in discovered.items():
-            if camera["stream_url"]:
-                continue  # Already has URL from go2rtc
-            if (name.lower() in camera["name"].lower() or
-                name.lower() in entity_id.lower()):
-                camera["stream_url"] = rtsp_url
-                print(f"[INFO] Matched UniFi camera '{name}' to {entity_id}")
-                break
+    unifi_urls = get_unifi_rtsp_urls(stream_quality)
+    for unifi_entity_id, rtsp_url in unifi_urls.items():
+        # Direct match by entity_id
+        if unifi_entity_id in discovered:
+            if not discovered[unifi_entity_id]["stream_url"]:
+                discovered[unifi_entity_id]["stream_url"] = rtsp_url
+                print(f"[INFO] Matched UniFi camera {unifi_entity_id}")
+        else:
+            # Try fuzzy matching if entity wasn't in discovered list
+            for entity_id, camera in discovered.items():
+                if camera["stream_url"]:
+                    continue
+                # Match by base entity name (without _high suffix)
+                base_unifi = unifi_entity_id.replace("camera.", "").replace("_high", "")
+                base_entity = entity_id.replace("camera.", "").replace("_high", "")
+                if base_unifi == base_entity:
+                    camera["stream_url"] = rtsp_url
+                    print(f"[INFO] Fuzzy matched UniFi {unifi_entity_id} to {entity_id}")
+                    break
 
     # Method 3: Check entity attributes
     print("[INFO] Checking camera entity attributes...")
@@ -336,6 +412,7 @@ def main():
 
     monocle_token = options.get("monocle_token", "")
     auto_discover = options.get("auto_discover", True)
+    stream_quality = options.get("stream_quality", "high")
     camera_filters = options.get("camera_filters", [])
 
     if not monocle_token:
@@ -350,7 +427,7 @@ def main():
     write_monocle_token(monocle_token)
 
     if auto_discover:
-        cameras = discover_cameras(camera_filters if camera_filters else None)
+        cameras = discover_cameras(camera_filters if camera_filters else None, stream_quality)
         config = generate_monocle_config(cameras)
         write_monocle_config(config)
     else:
