@@ -80,17 +80,28 @@ def get_unifi_protect_config() -> Optional[Tuple[str, int]]:
     """Get UniFi Protect NVR IP from config entries."""
     entries = api_get("/api/config/config_entries/entry")
     if not entries:
+        print("[DEBUG] Config entries API returned nothing")
         return None
 
+    # Debug: show all integration domains
+    domains = set(entry.get("domain", "") for entry in entries)
+    print(f"[DEBUG] Found integrations: {sorted(domains)}")
+
+    # Look for UniFi Protect (try various domain names)
+    unifi_domains = ["unifiprotect", "unifi_protect", "ubiquiti_unifi_protect", "unifi"]
     for entry in entries:
-        if entry.get("domain") == "unifiprotect":
+        domain = entry.get("domain", "")
+        if domain in unifi_domains or "unifi" in domain.lower() or "protect" in domain.lower():
+            print(f"[DEBUG] Found potential UniFi entry: domain={domain}")
+            print(f"[DEBUG]   data keys: {list(entry.get('data', {}).keys())}")
             data = entry.get("data", {})
-            host = data.get("host")
+            host = data.get("host") or data.get("ip") or data.get("address")
             port = data.get("port", 7441)
             if host:
                 print(f"[INFO] Found UniFi Protect NVR: {host}:{port}")
                 return (host, port)
 
+    print("[DEBUG] No UniFi Protect config entry found")
     return None
 
 def get_unifi_camera_ids() -> Dict[str, str]:
@@ -100,19 +111,37 @@ def get_unifi_camera_ids() -> Dict[str, str]:
     # Get device registry
     devices = api_get("/api/config/device_registry")
     if not devices:
+        print("[DEBUG] Device registry API returned nothing")
         return camera_ids
 
+    print(f"[DEBUG] Device registry has {len(devices)} devices")
+
+    # Debug: show first few device identifier prefixes
+    id_prefixes = set()
+    for device in devices[:50]:
+        identifiers = device.get("identifiers", [])
+        for identifier in identifiers:
+            if isinstance(identifier, list) and len(identifier) >= 1:
+                id_prefixes.add(identifier[0])
+    print(f"[DEBUG] Device identifier prefixes: {sorted(id_prefixes)}")
+
+    # Look for UniFi devices (try various identifier prefixes)
+    unifi_prefixes = ["unifiprotect", "unifi_protect", "ubiquiti", "unifi"]
     for device in devices:
-        # Check if it's a UniFi Protect device
         identifiers = device.get("identifiers", [])
         for identifier in identifiers:
             if isinstance(identifier, list) and len(identifier) >= 2:
-                if identifier[0] == "unifiprotect":
+                prefix = identifier[0].lower() if isinstance(identifier[0], str) else ""
+                if any(p in prefix for p in unifi_prefixes) or "unifi" in prefix or "protect" in prefix:
                     camera_id = identifier[1]
                     name = device.get("name_by_user") or device.get("name", "")
-                    if name and camera_id:
+                    model = device.get("model", "")
+                    # Only add cameras (not NVR or other devices)
+                    if name and camera_id and ("camera" in model.lower() or "g4" in model.lower() or "g5" in model.lower() or "doorbell" in model.lower()):
                         camera_ids[name] = camera_id
-                        print(f"[DEBUG] UniFi camera: {name} -> {camera_id}")
+                        print(f"[DEBUG] UniFi camera: {name} ({model}) -> {camera_id}")
+                    elif name:
+                        print(f"[DEBUG] UniFi device (not camera): {name} ({model})")
 
     return camera_ids
 
