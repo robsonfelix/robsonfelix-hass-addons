@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-01-15
+
+### Fixed
+- Reverted to `--headless` (without `=new`) for compatibility
+- Added `--remote-allow-origins=*` to allow cross-origin CDP connections
+- Removed `about:blank` URL that may have caused early exit
+- Added more flags to reduce noise and disable unnecessary features
+
 ## [0.1.1] - 2026-01-15
 
 ### Fixed
