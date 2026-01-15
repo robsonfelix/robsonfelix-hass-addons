@@ -21,7 +21,9 @@
       "Bash(gh repo rename:*)",
       "Bash(xxd:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "WebFetch(domain:api.iconify.design)",
+      "WebFetch(domain:hub.docker.com)"
     ]
   }
 }
