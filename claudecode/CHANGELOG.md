@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.43] - 2026-01-14
+
+### Changed
+- Upgraded `hassio_role` from `homeassistant` to `manager`
+- Enables access to other add-ons' logs via `ha addons logs <slug>`
+
 ## [1.2.42] - 2026-01-14
 
 ### Added
