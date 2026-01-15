@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.52] - 2026-01-15
+
+### Fixed
+- Changed Playwright CDP endpoint from `ws://` to `http://` protocol
+- Playwright auto-discovers the WebSocket path via `/json/version`
+- Fixes 404 Not Found error when connecting to Chrome CDP
+
 ## [1.2.51] - 2026-01-15
 
 ### Added

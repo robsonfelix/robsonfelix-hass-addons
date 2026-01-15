@@ -210,8 +210,8 @@ CMD ["/bin/bash", "-c", "\
     echo '[INFO] MCP disabled'; \
   fi && \
   if [ \"$ENABLE_PLAYWRIGHT\" = \"true\" ]; then \
-    claude mcp add-json playwright \"{\\\"command\\\":\\\"npx\\\",\\\"args\\\":[\\\"-y\\\",\\\"@playwright/mcp\\\",\\\"--cdp-endpoint\\\",\\\"ws://${PLAYWRIGHT_HOST}:9222\\\"]}\" -s user && \
-    echo \"[INFO] Playwright MCP enabled (CDP: ws://${PLAYWRIGHT_HOST}:9222)\"; \
+    claude mcp add-json playwright \"{\\\"command\\\":\\\"npx\\\",\\\"args\\\":[\\\"-y\\\",\\\"@playwright/mcp\\\",\\\"--cdp-endpoint\\\",\\\"http://${PLAYWRIGHT_HOST}:9222\\\"]}\" -s user && \
+    echo \"[INFO] Playwright MCP enabled (CDP: http://${PLAYWRIGHT_HOST}:9222)\"; \
     echo '[INFO] Make sure the Playwright Browser add-on is installed and running'; \
   else \
     echo '[INFO] Playwright MCP disabled'; \
