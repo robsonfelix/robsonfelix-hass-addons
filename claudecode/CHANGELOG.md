@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.57] - 2026-01-16
+
+### Added
+- `socat` for bidirectional data transfer between channels
+
 ## [1.2.56] - 2026-01-16
 
 ### Added

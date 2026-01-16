@@ -38,6 +38,7 @@ RUN apk add --no-cache \
     openssl \
     ripgrep \
     p7zip \
+    socat \
     && update-ca-certificates
 
 # Install ttyd static binary (avoids libwebsockets issues)
