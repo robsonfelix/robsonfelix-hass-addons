@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.12] - 2026-03-03
+
+### Fixed
+- Replace apt-get with apk for Alpine compatibility
+- Switch base image from mcr.microsoft.com/playwright to HA Alpine base
+- Install Chromium from Alpine packages (chromium, jq, curl, nginx)
+
 ## [0.1.11] - 2026-02-23
 
 ### Added

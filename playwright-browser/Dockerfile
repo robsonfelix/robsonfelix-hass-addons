@@ -11,11 +11,12 @@ LABEL org.opencontainers.image.description="Headless Chromium with CDP endpoint 
 LABEL org.opencontainers.image.source="https://github.com/robsonfelix/robsonfelix-hass-addons"
 LABEL org.opencontainers.image.licenses="MIT"
 
-# jq is already available in the Playwright image (Ubuntu-based)
-# Just ensure it's installed
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends jq curl nginx && \
-    rm -rf /var/lib/apt/lists/*
+# Install Chromium and dependencies from Alpine packages
+RUN apk add --no-cache \
+    chromium \
+    jq \
+    curl \
+    nginx
 
 # Create data directory
 RUN mkdir -p /data
