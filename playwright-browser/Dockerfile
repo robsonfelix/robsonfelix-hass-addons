@@ -1,5 +1,7 @@
+# Hardcode base image: HA Supervisor regex rejects mcr.microsoft.com/playwright
+# (requires registry/org/image format, but MCR uses registry/image)
+FROM mcr.microsoft.com/playwright:v1.57.0-noble
 ARG BUILD_FROM
-FROM ${BUILD_FROM}
 
 # Labels
 LABEL maintainer="Robson Felix"

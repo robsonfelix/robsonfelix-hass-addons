@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.12] - 2026-03-22
+
+### Fixed
+- Hardcode Playwright base image in Dockerfile to bypass HA Supervisor regex validation
+- HA Supervisor requires registry/org/image format but MCR uses registry/image (mcr.microsoft.com/playwright)
+- Use dummy base images in build.yaml to pass validation, actual image set directly in Dockerfile
+
 ## [0.1.11] - 2026-02-23
 
 ### Added
