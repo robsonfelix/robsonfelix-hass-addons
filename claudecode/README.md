@@ -156,9 +156,12 @@ Since tmux captures mouse events, copy/paste works differently:
 
 | Action | How to do it |
 |--------|--------------|
-| **Copy** | Hold `Ctrl+Shift` while selecting text with mouse |
+| **Copy (macOS)** | Hold `Option (⌥)` while selecting text with the mouse |
+| **Copy (Windows/Linux)** | Hold `Shift` while selecting text with the mouse |
 | **Paste** | `Shift+Insert` or middle-click |
 | **Alternative paste** | `Ctrl+Shift+V` (browser dependent) |
+
+Holding the modifier makes the browser terminal handle the selection natively instead of passing the mouse to tmux; the selection is copied to your clipboard automatically the moment you release the button — watch for the brief ✂ icon as confirmation.
 
 **Note**: Regular right-click paste and simple mouse selection won't work because tmux intercepts these events for scrolling.
 
@@ -171,7 +174,7 @@ The authentication URL can be long and may wrap across multiple lines. To handle
 3. Complete authentication in the browser and **copy the auth code**
 4. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+If clicking the link doesn't work, hold `Shift` (`Option` on macOS) while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
 
 ### Scrolling and Session Persistence Trade-offs
 
@@ -181,6 +184,7 @@ If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL wit
 - ✅ Long-running Claude tasks continue in background
 - ✅ Mouse wheel scrolling works (enters copy mode automatically)
 - ✅ 20,000 line scrollback buffer
+- ✅ Copy by holding `Shift` (Windows/Linux) or `Option ⌥` (macOS) while selecting
 - ⚠️ Use middle-click or Shift+Insert to paste (right-click paste may not work)
 
 **Without tmux (`session_persistence: false`):**
