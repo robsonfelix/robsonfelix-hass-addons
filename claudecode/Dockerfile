@@ -298,6 +298,7 @@ CMD ["/bin/bash", "-c", "\
     -t fontSize=$FONT_SIZE \
     -t fontFamily=Monaco,Consolas,monospace \
     -t scrollback=20000 \
+    -t macOptionClickForcesSelection=true \
     -t \"theme=$COLORS\" \
     $SHELL_CMD \
 "]

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.66] - 2026-07-26
+
+### Fixed
+- Copying text from the web terminal was impossible on macOS whenever the program in the pane enabled mouse tracking - which is the normal state of this add-on: tmux runs with `mouse on`, and Claude Code's fullscreen renderer captures the mouse too. ttyd's copy path is client-side (a native xterm.js selection is auto-copied with a brief scissors overlay), but xterm.js only allows bypassing application mouse-tracking with Shift+drag on Windows/Linux; on macOS the gesture is Option+drag and it is additionally gated behind the `macOptionClickForcesSelection` client option, which defaults to false. Mac users therefore had no working copy gesture at all. ttyd now starts with `-t macOptionClickForcesSelection=true`, so Option+drag makes a native selection that lands on the system clipboard. Verified against the shipped ttyd 1.7.7 binary and web client. A full fix (OSC 52, letting tmux and CLI apps write the clipboard directly) needs a newer xterm.js than any released ttyd bundles: 1.7.7 (2024-03) is still the latest release; ttyd's main branch has `@xterm/addon-clipboard` and could be served via `ttyd --index` in a future change
+- README copy/paste instructions updated to match: `Option (⌥)`+drag on macOS, `Shift`+drag on Windows/Linux (the previously documented `Ctrl+Shift` gesture never worked on macOS)
+
 ## [1.2.65] - 2026-07-08
 
 ### Security
