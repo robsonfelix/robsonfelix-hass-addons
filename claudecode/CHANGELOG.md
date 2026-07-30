@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.66] - 2026-07-30
+
+### Added
+- `claude-login-url` command: pulls the OAuth login URL out of the `claude` tmux session (via `tmux capture-pane -J`, which rejoins soft-wrapped lines) and saves it to `/homeassistant/claude-login-url.txt`. Works around two upstream limitations that otherwise block signing in: ttyd's bundled xterm.js does not implement OSC 52 clipboard writes, so the CLI's own "press `c` to copy" hint is a no-op here; and its link detector only scans one rendered terminal row at a time, so a login URL that wraps across lines never becomes a single clickable link either. Documented in the README's authentication section
+
 ## [1.2.65] - 2026-07-08
 
 ### Security

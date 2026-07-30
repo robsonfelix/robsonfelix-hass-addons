@@ -164,14 +164,17 @@ Since tmux captures mouse events, copy/paste works differently:
 
 #### Authenticating Claude Code (first launch)
 
-The authentication URL can be long and may wrap across multiple lines. To handle this:
+The login URL is long, wraps across multiple lines in the terminal, and the CLI's own "press `c` to copy" hint does nothing here — ttyd's bundled xterm.js doesn't implement OSC 52 clipboard writes, and its link detector only scans one rendered row at a time, so a wrapped URL never becomes one clickable link either. Recommended:
 
-1. **Zoom out** your browser (`Ctrl + -` or `Cmd + -`) until the URL fits on a single line
-2. **Click the link** — it should open in a new tab
-3. Complete authentication in the browser and **copy the auth code**
-4. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
+1. Run `claude` (or `/login` inside it) to print the login URL
+2. Open a second tmux window: `Ctrl+b c`
+3. Run `claude-login-url` — it reassembles the full URL from the first window's scrollback (even wrapped) and saves it to `/homeassistant/claude-login-url.txt`
+4. Open that file with the Home Assistant File Editor add-on (or over Samba), copy the whole line, and open it in your browser
+5. Complete authentication and **copy the auth code**
+6. Switch back to the first tmux window (`Ctrl+b p`) and **paste** the code with `Shift+Insert` or `Ctrl+Shift+V`
+7. Delete `claude-login-url.txt` when done — it lives in your config directory, which is included in HA backups
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+If you're running with `session_persistence: false` (no tmux), `claude-login-url` isn't available, but native browser copy/paste works directly: **zoom out** your browser (`Ctrl + -` or `Cmd + -`) until the URL fits on a single line, then select and copy it normally.
 
 ### Scrolling and Session Persistence Trade-offs
 
@@ -216,7 +219,7 @@ Claude Code manages its own authentication. If you have issues:
 2. Follow the prompts to log in or enter your API key
 3. Credentials are saved automatically for future sessions
 
-**Can't copy the URL or paste the auth code?** The terminal uses tmux, which changes how copy/paste works. See [Copy and Paste in tmux](#copy-and-paste-in-tmux) for instructions.
+**Can't copy the URL or paste the auth code?** The terminal uses tmux, which changes how copy/paste works, and the CLI's own "press `c` to copy" hint doesn't work in this browser terminal (see [Authenticating Claude Code](#authenticating-claude-code-first-launch) for the `claude-login-url` workaround). See [Copy and Paste in tmux](#copy-and-paste-in-tmux) for general copy/paste instructions.
 
 ### hass-mcp not working
 

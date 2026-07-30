@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# claude-login-url — extract the most recent OAuth login URL from the Claude
+# tmux session and save it to /homeassistant, where it can be opened via the
+# Home Assistant File Editor or Samba and copied without going through the
+# terminal at all.
+#
+# Why: ttyd's bundled xterm.js doesn't implement OSC 52 clipboard writes, so
+# the "press c to copy" hint in `claude`'s /login is a no-op here. Its
+# built-in link detector also only scans one rendered row at a time, so a
+# long OAuth URL that wraps across lines never becomes a single clickable
+# link either. `tmux capture-pane -J` joins soft-wrapped lines back into one
+# logical line, so the URL comes out intact regardless of terminal width.
+
+OUT="${1:-/homeassistant/claude-login-url.txt}"
+SESSION="claude"
+
+if ! tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "No tmux session named '$SESSION' found." >&2
+    echo "This command needs session_persistence: true (the default)." >&2
+    echo "With session_persistence off there is no tmux, but your browser's" >&2
+    echo "native selection/copy works directly instead." >&2
+    exit 1
+fi
+
+url=$(tmux capture-pane -p -J -t "$SESSION" -S -500 2>/dev/null \
+    | grep -oE "https://(claude\.(com|ai)|console\.anthropic\.com|platform\.claude\.com)[^[:space:]\"'\`)<>]*" \
+    | tail -1)
+
+if [ -z "$url" ]; then
+    echo "No login URL found in the Claude session." >&2
+    echo "Run 'claude' or '/login' first, then run this command again." >&2
+    exit 1
+fi
+
+printf '%s\n' "$url" > "$OUT"
+chmod 600 "$OUT"
+
+echo "Login URL saved to: $OUT"
+echo "Open it with the Home Assistant File Editor (or over Samba), copy the"
+echo "whole line into your browser, and authorize. Delete the file afterwards -"
+echo "it lives in your config directory, which is included in HA backups."
