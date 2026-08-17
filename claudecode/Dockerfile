@@ -1,4 +1,26 @@
 ARG BUILD_FROM
+
+# Build a current ttyd web client: the one embedded in the ttyd 1.7.7 binary
+# predates OSC 52 clipboard support, so startup serves this build via --index.
+# Built with yarn so ttyd's lockfile is honored (npm resolves newer transitive
+# deps and fails type-checking). Everything is pinned - ttyd commit, corepack,
+# lockfile deps - so the output is reproducible. COREPACK_INTEGRITY_KEYS=0
+# keeps the pinned corepack working across npm signing-key rotations;
+# integrity comes from the yarn.lock checksums. Drop this stage and the
+# --index flag once a ttyd release newer than 1.7.7 ships.
+FROM ${BUILD_FROM} AS ttyd-client
+RUN apk add --no-cache curl nodejs npm
+ARG TTYD_CLIENT_COMMIT=2922cb89f518bae4d0fcf4d757a7419638fc71fc
+RUN curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+        "https://github.com/tsl0922/ttyd/archive/${TTYD_CLIENT_COMMIT}.tar.gz" \
+        | tar xz && mv "ttyd-${TTYD_CLIENT_COMMIT}" /ttyd
+WORKDIR /ttyd/html
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    COREPACK_NPM_REGISTRY=https://registry.npmjs.org \
+    COREPACK_INTEGRITY_KEYS=0
+RUN npm install -g corepack@0.35.0 && corepack enable && \
+    yarn install --immutable && yarn run inline
+
 FROM ${BUILD_FROM}
 
 # Labels
@@ -42,7 +64,8 @@ RUN apk add --no-cache \
     docker-cli \
     && update-ca-certificates
 
-# Install ttyd static binary (avoids libwebsockets issues)
+# Install ttyd static binary (avoids libwebsockets issues); the web client
+# it serves comes from the ttyd-client build stage above (see --index).
 ARG BUILD_ARCH
 RUN case "${BUILD_ARCH}" in \
         amd64) TTYD_ARCH="x86_64" ;; \
@@ -54,6 +77,7 @@ RUN case "${BUILD_ARCH}" in \
     curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
         "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
     chmod +x /usr/bin/ttyd
+COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 
 # Install Claude Code.
 # 2.1.113 replaced the JS entrypoint with a Bun-compiled native binary, whose
@@ -295,6 +319,7 @@ CMD ["/bin/bash", "-c", "\
   if [ \"$REMOTE_CONTROL\" = \"true\" ]; then export CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=\"$RC_SESSION_PREFIX\"; fi && \
   cd /homeassistant && \
   exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
+    --index /usr/share/ttyd/index.html \
     -t fontSize=$FONT_SIZE \
     -t fontFamily=Monaco,Consolas,monospace \
     -t scrollback=20000 \
