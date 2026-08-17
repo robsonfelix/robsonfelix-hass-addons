@@ -1,4 +1,26 @@
 ARG BUILD_FROM
+
+# Build a current ttyd web client: the one embedded in the ttyd 1.7.7 binary
+# predates OSC 52 clipboard support, so startup serves this build via --index.
+# Built with yarn so ttyd's lockfile is honored (npm resolves newer transitive
+# deps and fails type-checking). Everything is pinned - ttyd commit, corepack,
+# lockfile deps - so the output is reproducible. COREPACK_INTEGRITY_KEYS=0
+# keeps the pinned corepack working across npm signing-key rotations;
+# integrity comes from the yarn.lock checksums. Drop this stage and the
+# --index flag once a ttyd release newer than 1.7.7 ships.
+FROM ${BUILD_FROM} AS ttyd-client
+RUN apk add --no-cache curl nodejs npm
+ARG TTYD_CLIENT_COMMIT=2922cb89f518bae4d0fcf4d757a7419638fc71fc
+RUN curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
+        "https://github.com/tsl0922/ttyd/archive/${TTYD_CLIENT_COMMIT}.tar.gz" \
+        | tar xz && mv "ttyd-${TTYD_CLIENT_COMMIT}" /ttyd
+WORKDIR /ttyd/html
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    COREPACK_NPM_REGISTRY=https://registry.npmjs.org \
+    COREPACK_INTEGRITY_KEYS=0
+RUN npm install -g corepack@0.35.0 && corepack enable && \
+    yarn install --immutable && yarn run inline
+
 FROM ${BUILD_FROM}
 
 # Labels
@@ -42,7 +64,8 @@ RUN apk add --no-cache \
     docker-cli \
     && update-ca-certificates
 
-# Install ttyd static binary (avoids libwebsockets issues)
+# Install ttyd static binary (avoids libwebsockets issues); the web client
+# it serves comes from the ttyd-client build stage above (see --index).
 ARG BUILD_ARCH
 RUN case "${BUILD_ARCH}" in \
         amd64) TTYD_ARCH="x86_64" ;; \
@@ -54,6 +77,7 @@ RUN case "${BUILD_ARCH}" in \
     curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors \
         "https://github.com/tsl0922/ttyd/releases/download/1.7.7/ttyd.${TTYD_ARCH}" -o /usr/bin/ttyd && \
     chmod +x /usr/bin/ttyd
+COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 
 # Install Claude Code.
 # 2.1.113 replaced the JS entrypoint with a Bun-compiled native binary, whose
@@ -62,8 +86,14 @@ RUN case "${BUILD_ARCH}" in \
 # SIGILL). Fix that at the hypervisor (Proxmox CPU type "host"), not here.
 # No version is hardcoded: take latest when it runs, otherwise the newest
 # release that passes a smoke test, so the add-on still builds on such hosts.
+# The package pulls a ~240MB platform-native binary via optional deps, so clean
+# the npm cache and temp dirs in the SAME layer - otherwise ~100MB+ of cache
+# gets baked into the image.
 COPY install-claude.sh /usr/local/bin/install-claude.sh
-RUN chmod +x /usr/local/bin/install-claude.sh && /usr/local/bin/install-claude.sh
+RUN chmod +x /usr/local/bin/install-claude.sh \
+    && /usr/local/bin/install-claude.sh \
+    && npm cache clean --force \
+    && rm -rf /root/.npm /tmp/*
 
 # Install hass-mcp for Home Assistant integration and pymodbus for Modbus operations
 RUN pip3 install --no-cache-dir --break-system-packages hass-mcp pymodbus pyserial
@@ -109,6 +139,9 @@ RUN mkdir -p \
     /root/.config \
     /root/.local/bin
 
+# Add-on-managed CLAUDE.md (copied to the persistent dir at runtime)
+COPY CLAUDE.addon.md /usr/share/claudecode/CLAUDE.addon.md
+
 # Shell and tmux config.
 # These were heredocs (RUN cat > file << 'EOF'), which require BuildKit and a
 # `# syntax=docker/dockerfile:1.4` directive. Builders without heredoc support
@@ -138,64 +171,8 @@ CMD ["/bin/bash", "-c", "\
   export HA_URL=\"http://supervisor/core\" && \
   PERSIST_DIR=/homeassistant/.claudecode && \
   mkdir -p $PERSIST_DIR/config /root/.config && \
-  printf '%s\n' \
-    '# Claude Code - Home Assistant Add-on' \
-    '' \
-    '## Path Mapping' \
-    '' \
-    'In this add-on container, paths are mapped differently than HA Core:' \
-    '- \\`/homeassistant\\` = HA config directory (equivalent to \\`/config\\` in HA Core)' \
-    '- \\`/config\\` does NOT exist - always use \\`/homeassistant\\`' \
-    '' \
-    'When users mention \\`/config/...\\`, translate to \\`/homeassistant/...\\`' \
-    '' \
-    '## Available Paths' \
-    '' \
-    '| Path | Description | Access |' \
-    '|------|-------------|--------|' \
-    '| \\`/homeassistant\\` | HA configuration | read-write |' \
-    '| \\`/share\\` | Shared folder | read-write |' \
-    '| \\`/media\\` | Media files | read-write |' \
-    '| \\`/ssl\\` | SSL certificates | read-only |' \
-    '| \\`/backup\\` | Backups | read-only |' \
-    '' \
-    '## Home Assistant Integration' \
-    '' \
-    'Use the \\`homeassistant\\` MCP server to query entities and call services.' \
-    '' \
-    '## Reading Home Assistant Logs' \
-    '' \
-    '**Log levels (from most to least verbose):**' \
-    '- \\`debug\\` - Only shown if explicitly enabled in configuration.yaml' \
-    '- \\`info\\` - General information, shown by default' \
-    '- \\`warning\\` - Warnings, always shown' \
-    '- \\`error\\` - Errors, always shown' \
-    '' \
-    '**Commands to read logs:**' \
-    '\\`\\`\\`bash' \
-    '# View recent logs (ha CLI)' \
-    'ha core logs 2>&1 | tail -100' \
-    '' \
-    '# Filter by keyword' \
-    'ha core logs 2>&1 | grep -i keyword' \
-    '' \
-    '# Filter errors only' \
-    'ha core logs 2>&1 | grep -iE \"(error|exception)\"' \
-    '' \
-    '# Alternative: read log file directly' \
-    'tail -100 /homeassistant/home-assistant.log' \
-    '\\`\\`\\`' \
-    '' \
-    '**To enable debug logging for an integration**, add to \\`configuration.yaml\\`:' \
-    '\\`\\`\\`yaml' \
-    'logger:' \
-    '  default: info' \
-    '  logs:' \
-    '    custom_components.YOUR_INTEGRATION: debug' \
-    '\\`\\`\\`' \
-    '' \
-    '**Key insight:** \\`_LOGGER.debug()\\` calls are invisible unless the logger level is set to debug. Use \\`_LOGGER.info()\\` or \\`_LOGGER.warning()\\` for logs that should always appear.' \
-    > $PERSIST_DIR/CLAUDE.md && \
+  cp /usr/share/claudecode/CLAUDE.addon.md $PERSIST_DIR/CLAUDE.md && \
+  touch $PERSIST_DIR/CLAUDE.user.md && \
   if [ ! -L /root/.claude ]; then rm -rf /root/.claude; ln -s $PERSIST_DIR /root/.claude; fi && \
   if [ ! -L /root/.config/claude-code ]; then rm -rf /root/.config/claude-code; ln -s $PERSIST_DIR/config /root/.config/claude-code; fi && \
   if [ ! -L /root/.claude.json ]; then touch $PERSIST_DIR/.claude.json; rm -f /root/.claude.json; ln -s $PERSIST_DIR/.claude.json /root/.claude.json; fi && \
@@ -295,6 +272,7 @@ CMD ["/bin/bash", "-c", "\
   if [ \"$REMOTE_CONTROL\" = \"true\" ]; then export CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=\"$RC_SESSION_PREFIX\"; fi && \
   cd /homeassistant && \
   exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
+    --index /usr/share/ttyd/index.html \
     -t fontSize=$FONT_SIZE \
     -t fontFamily=Monaco,Consolas,monospace \
     -t scrollback=20000 \
