@@ -2,6 +2,74 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.67] - 2026-08-17
+
+### Changed
+- Image size: the Claude Code install now runs `npm cache clean --force` and removes `/root/.npm` and `/tmp` in the same `RUN` layer. The package pulls a ~240MB platform-native binary via optional dependencies, so ~100MB+ of npm cache was being baked into the image
+
+### Added
+- `.dockerignore` keeps the Docker build context to just the `Dockerfile`, `install-claude.sh`, and `rootfs/` (docs, images, translations, and add-on metadata are consumed by the HA Supervisor, not the image build)
+
+## [1.2.66] - 2026-08-17
+
+### Added
+- **Working clipboard integration (OSC 52) in the web terminal.** The web
+  client embedded in the ttyd 1.7.7 binary bundles xterm.js 5.4 without the
+  clipboard addon, so OSC 52 writes were silently dropped — the Claude CLI's
+  "press `c` to copy" hint did nothing, and tmux copies never reached the
+  system clipboard. ttyd now serves a newer web client (xterm.js 5.5 +
+  `@xterm/addon-clipboard`) via `--index`; the 1.7.7 binary is unchanged.
+  The client is compiled in a Dockerfile build stage from a pinned ttyd main
+  commit (2922cb8), with yarn honoring the upstream lockfile — the build is
+  reproducible (byte-identical output across runs) and every input is
+  pinned, so nothing drifts between builds.
+  tmux is configured with `set-clipboard on` plus an `Ms` terminal-override
+  pinned to the `c` selection (tmux fills `%p1` with `""` for its own copies
+  and `c` for programs; the clipboard addon drops anything that isn't exactly
+  `c`, so the override prints `%p1` with zero precision and hardcodes `c`).
+  Verified with a headless Chromium against the shipped 1.7.7 binary,
+  including end-to-end from a full amd64 image build: typing, resize, window
+  title, program-initiated OSC 52 (the "press `c`" path), and tmux
+  buffer/copy-mode copies all work. Because tmux stores wrapped output as
+  one logical line, copy-mode copies of the wrapped login URL come out
+  intact — the problem #38 works around, solved at the root.
+  The newer client also helps plain-HTTP setups: its link detector follows
+  URLs across soft-wrapped rows, so a wrapped login URL printed as flowing
+  output is clickable as one complete link, and a `Ctrl+Shift`-drag
+  selection over it copies as one unbroken line via `execCommand` — both
+  verified with the async clipboard API unavailable, as it is on plain HTTP.
+  Limitations, also verified: OSC 52 itself needs HTTPS or localhost —
+  on plain HTTP the write is dropped harmlessly and the drag gestures
+  remain the copy path; and rows painted by full-screen UIs carry no wrap
+  metadata, so drag-selection there still sees one row at a time (the
+  click covers the login URL — see below — with the browser zoom-out
+  trick as the text-selection fallback). The main-branch client on a
+  1.7.7 server is an unreleased pairing; the build stage and `--index`
+  flag should be dropped when the next ttyd release ships. README updated
+  (copy table, authentication flow, trade-offs list).
+- **The wrapped `/login` URL is clickable — and opens as one complete
+  link.** The login screen hard-wraps the OAuth URL into separate rows
+  (real newlines, no wrap metadata), so the link detector, drag-selection,
+  and click each saw only one row's fragment — and on plain HTTP, where
+  the `c` (OSC 52) copy hint is blocked by the browser, that left no
+  working path to log in. But the CLI prints every one of those rows
+  wrapped in an OSC 8 hyperlink whose metadata carries the *complete*
+  URL, and the xterm.js 5.5 client activates OSC 8 links out of the box.
+  The missing piece was tmux: it re-emits pane hyperlinks only when the
+  outer terminal declares the `hyperlinks` terminal-feature, which its
+  default `xterm*` feature list lacks — so the links were silently
+  stripped. A one-line `terminal-features` override in `.tmux.conf`
+  fixes it (needs tmux ≥ 3.4; the Alpine 3.21 base ships 3.5a). Clicking
+  any row of the wrapped URL now opens the complete OAuth URL in a new
+  tab after the terminal's confirmation dialog — a navigation, not a
+  clipboard write, so it works on plain HTTP too. Verified by replaying
+  a captured real `/login` byte stream (Claude Code 2.1.233) through the
+  shipped ttyd 1.7.7 binary plus the built web client in a headless
+  Chromium: without the override a click opened only the truncated
+  first-row fragment; with it, clicks on the first row and on a
+  continuation row each opened the full URL, and tmux OSC 52 copies
+  still landed on the clipboard.
+
 ## [1.2.65] - 2026-07-08
 
 ### Security
