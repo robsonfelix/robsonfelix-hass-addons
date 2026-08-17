@@ -72,4 +72,9 @@ profile claudecode flags=(attach_disconnected,mediate_deleted) {
 
   # Node.js modules
   /usr/lib/node_modules/** ixmr,
+
+  # Playwright MCP server (installed under /opt to avoid /usr/local/bin/mcp
+  # collision with hass-mcp; the /usr/local/bin/playwright-mcp symlink
+  # resolves through here, so AppArmor needs the /opt path allowed too)
+  /opt/playwright-mcp/** ixmr,
 }

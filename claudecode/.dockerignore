@@ -1,0 +1,12 @@
+# Keep the build context small. Only the Dockerfile, install-claude.sh, and
+# rootfs/ are actually needed inside the image build; everything below is
+# add-on metadata, docs, or assets consumed by HA Supervisor, not the image.
+.git
+.gitignore
+*.png
+README.md
+CHANGELOG.md
+config.yaml
+build.yaml
+apparmor.txt
+translations/
