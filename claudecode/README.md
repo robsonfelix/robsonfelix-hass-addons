@@ -102,14 +102,43 @@ claude --continue
 | `working_directory` | Start directory | /homeassistant |
 | `session_persistence` | Use tmux for persistent sessions | true |
 | `auto_update_claude` | Auto-update Claude Code on startup (rolls back automatically if the new release cannot run) | true |
+| `auto_launch_claude` | Start Claude Code automatically when the terminal opens: `off` (plain shell), `new` (fresh session), or `continue` (resume the last session). Exiting Claude drops you into a shell | off |
 | `enable_remote_control` | View and steer the session from claude.ai/code or the Claude mobile app. See the security note below | false |
 | `remote_control_session_prefix` | Prefix for auto-generated Remote Control session names | HomeAssistant |
+| `extra_npm_packages` | List of npm package specs to install at every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). Bin dir is on `PATH`. Use to add custom MCP servers without forking the Dockerfile. | `[]` |
 
 ### Remote Control
 
 With `enable_remote_control`, sessions can be driven from `claude.ai/code` or the Claude mobile app (requires a Pro, Max, Team, or Enterprise subscription; API keys are not supported).
 
 **Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it. Leave this off unless you need it.
+
+### Custom MCP servers (`extra_npm_packages`)
+
+Add-on updates rebuild the container and wipe anything you `npm install -g` manually. `extra_npm_packages` re-installs a list of packages on every container start, to a persistent path on the HA volume.
+
+**Install:**
+
+1. Add packages to the option in the add-on Configuration tab:
+   ```yaml
+   extra_npm_packages:
+     - "@modelcontextprotocol/server-filesystem"
+     - "some-other-mcp@1.4.2"
+     - "@vendor/mcp"
+   ```
+2. Restart the add-on. Watch the log for `[INFO] Installing extra_npm_packages: ...`.
+3. Open a terminal in Claude Code and register the MCP server:
+   ```bash
+   claude mcp add-json filesystem '{"command":"mcp-server-filesystem","args":["/homeassistant"]}' -s user
+   ```
+   The binary lives at `/homeassistant/.claudecode/npm-global/bin/<bin-name>` and that directory is on `PATH`, so referencing it by name works.
+
+The MCP registration itself is persistent (stored in `~/.claude/settings.json`, which is symlinked to the HA volume), so step 3 is one-time.
+
+**Caveats:**
+- Re-installs on every container start; unpinned packages get the latest each time.
+- A bad package name logs `[WARN]` but doesn't stop the add-on.
+- Don't know the binary name? Run `ls /homeassistant/.claudecode/npm-global/bin/` after install.
 
 ## File Locations
 
@@ -120,6 +149,10 @@ With `enable_remote_control`, sessions can be driven from `claude.ai/code` or th
 | `/media` | Media folder | read-write |
 | `/ssl` | SSL certificates | read-only |
 | `/backup` | Backups | read-only |
+
+## Customizing Claude's Instructions
+
+The add-on regenerates `~/.claude/CLAUDE.md` (Claude Code's persistent instructions file) on every start, so don't edit it directly. Put your own instructions in `/homeassistant/.claudecode/CLAUDE.user.md` instead: the add-on creates it empty, never modifies it, and `CLAUDE.md` imports it — so anything you write there loads into every Claude Code session and survives restarts and add-on updates.
 
 ## Session Persistence
 
@@ -156,22 +189,24 @@ Since tmux captures mouse events, copy/paste works differently:
 
 | Action | How to do it |
 |--------|--------------|
+| **Copy (tmux copy-mode)** | Scroll up (enters copy-mode), select, then copy — lands directly on your clipboard¹ |
 | **Copy** | Hold `Ctrl+Shift` while selecting text with mouse |
 | **Paste** | `Shift+Insert` or middle-click |
 | **Alternative paste** | `Ctrl+Shift+V` (browser dependent) |
+
+¹ OSC 52 needs **HTTPS or localhost** — on plain HTTP, use the modifier-key gesture instead. Bonus: copy-mode copies wrapped lines as one logical line, so long URLs come out intact.
 
 **Note**: Regular right-click paste and simple mouse selection won't work because tmux intercepts these events for scrolling.
 
 #### Authenticating Claude Code (first launch)
 
-The authentication URL can be long and may wrap across multiple lines. To handle this:
+**Click the URL** — this works everywhere, including plain HTTP. It's a real hyperlink (OSC 8): even though it wraps, any row opens the complete URL in a new tab after a confirmation prompt.
 
-1. **Zoom out** your browser (`Ctrl + -` or `Cmd + -`) until the URL fits on a single line
-2. **Click the link** — it should open in a new tab
-3. Complete authentication in the browser and **copy the auth code**
-4. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
+Over **HTTPS** (or localhost), the CLI's **press `c` to copy** hint also works via OSC 52. On plain HTTP browsers block clipboard writes — use the click.
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+Don't drag-select the URL: its rows are separate lines and copy with line breaks. If you need it as text, **zoom out** (`Ctrl + -` / `Cmd + -`) until it fits on one line.
+
+Then authenticate in the browser, copy the auth code, and paste it back with `Shift+Insert` or `Ctrl+Shift+V`.
 
 ### Scrolling and Session Persistence Trade-offs
 
@@ -181,6 +216,8 @@ If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL wit
 - ✅ Long-running Claude tasks continue in background
 - ✅ Mouse wheel scrolling works (enters copy mode automatically)
 - ✅ 20,000 line scrollback buffer
+- ✅ Copy-mode copies and `claude`'s "press `c` to copy" go straight to your clipboard (HTTPS/localhost only)
+- ✅ OSC 8 hyperlinks (e.g. the `/login` URL) open complete with one click
 - ⚠️ Use middle-click or Shift+Insert to paste (right-click paste may not work)
 
 **Without tmux (`session_persistence: false`):**

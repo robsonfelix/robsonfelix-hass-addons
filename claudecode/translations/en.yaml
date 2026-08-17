@@ -42,6 +42,13 @@ configuration:
     description: >-
       Automatically check for and install Claude Code updates on add-on startup.
       Keeps Claude Code current without requiring add-on version bumps.
+  auto_launch_claude:
+    name: Auto-launch Claude Code
+    description: >-
+      Start Claude Code automatically when the web terminal opens. "off" starts
+      a plain shell (default), "new" launches a fresh Claude Code session,
+      "continue" resumes the most recent session (claude --continue). When
+      Claude Code exits you land in a normal shell.
   enable_remote_control:
     name: Enable Remote Control
     description: >-
@@ -57,6 +64,13 @@ configuration:
       Prefix for auto-generated Remote Control session names visible in claude.ai/code
       and the Claude mobile app. Defaults to "HomeAssistant", producing names like
       "HomeAssistant-graceful-unicorn". Only applies when Enable Remote Control is on.
+  extra_npm_packages:
+    name: Extra npm Packages
+    description: >-
+      npm package specs (e.g. "@modelcontextprotocol/server-filesystem" or
+      "some-mcp@1.4.2") installed on every add-on start into a persistent
+      directory on the HA volume, so they survive add-on updates and rebuilds.
+      Use this to add custom MCP servers without forking the add-on.
 
 network:
   7681/tcp: Web Terminal (ttyd)

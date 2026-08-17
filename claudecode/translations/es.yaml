@@ -44,6 +44,13 @@ configuration:
     description: >-
       Verifica e instala automáticamente actualizaciones de Claude Code al iniciar el add-on.
       Mantiene Claude Code actualizado sin necesidad de actualizar la versión del add-on.
+  auto_launch_claude:
+    name: Inicio Automático de Claude Code
+    description: >-
+      Inicia Claude Code automáticamente al abrir el terminal web. "off" abre un
+      shell normal (predeterminado), "new" inicia una sesión nueva de Claude Code,
+      "continue" reanuda la sesión más reciente (claude --continue). Al salir de
+      Claude Code quedas en un shell normal.
   enable_remote_control:
     name: Habilitar Control Remoto
     description: >-
@@ -60,6 +67,14 @@ configuration:
       Prefijo para los nombres de sesión de Control Remoto generados automáticamente,
       visible en claude.ai/code y la aplicación móvil de Claude. El valor predeterminado
       es "HomeAssistant", generando nombres como "HomeAssistant-graceful-unicorn". Solo aplica cuando el Control Remoto está habilitado.
+  extra_npm_packages:
+    name: Paquetes npm Adicionales
+    description: >-
+      Especificaciones de paquetes npm (p. ej. "@modelcontextprotocol/server-filesystem"
+      o "some-mcp@1.4.2") que se instalan en cada inicio del add-on en un directorio
+      persistente del volumen de HA, por lo que sobreviven a actualizaciones y
+      reconstrucciones del add-on. Úsalo para añadir servidores MCP personalizados
+      sin bifurcar el add-on.
 
 network:
   7681/tcp: Terminal Web (ttyd)
