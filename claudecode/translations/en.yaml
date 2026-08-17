@@ -57,6 +57,13 @@ configuration:
       Prefix for auto-generated Remote Control session names visible in claude.ai/code
       and the Claude mobile app. Defaults to "HomeAssistant", producing names like
       "HomeAssistant-graceful-unicorn". Only applies when Enable Remote Control is on.
+  extra_npm_packages:
+    name: Extra npm Packages
+    description: >-
+      npm package specs (e.g. "@modelcontextprotocol/server-filesystem" or
+      "some-mcp@1.4.2") installed on every add-on start into a persistent
+      directory on the HA volume, so they survive add-on updates and rebuilds.
+      Use this to add custom MCP servers without forking the add-on.
 
 network:
   7681/tcp: Web Terminal (ttyd)

@@ -60,6 +60,14 @@ configuration:
       Prefixo para nomes de sessão de Controle Remoto gerados automaticamente, visível
       no claude.ai/code e no aplicativo móvel do Claude. O padrão é "HomeAssistant",
       gerando nomes como "HomeAssistant-graceful-unicorn". Aplicável apenas quando o Controle Remoto está habilitado.
+  extra_npm_packages:
+    name: Pacotes npm Adicionais
+    description: >-
+      Especificações de pacotes npm (ex.: "@modelcontextprotocol/server-filesystem"
+      ou "some-mcp@1.4.2") instaladas em cada inicialização do add-on em um diretório
+      persistente no volume do HA, sobrevivendo a atualizações e reconstruções do
+      add-on. Use para adicionar servidores MCP personalizados sem fazer fork do
+      add-on.
 
 network:
   7681/tcp: Terminal Web (ttyd)
