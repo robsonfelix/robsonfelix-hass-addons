@@ -62,8 +62,12 @@ jobs:
       # --test constroi sem publicar. Nas tags ele sai e a imagem vai para o
       # ghcr, para o usuario baixar em vez de compilar na propria maquina --
       # o que hoje faz cada instalacao rodar o estagio de build do ttyd.
+      # Pinado no SHA, nao na tag: tags sao moveis, SHA nao. @master executava
+      # o que estivesse no branch no momento do build, sem revisao -- numa
+      # action que recebe GITHUB_TOKEN com permissao de escrita em packages.
+      # Atualizar: ver github.com/home-assistant/builder/releases
       - name: Build add-on
-        uses: home-assistant/builder@master
+        uses: home-assistant/builder@7412f0023ea9b6e58e8bb5059f1660f51376f49a  # 2026.09.0
         with:
           args: |
             ${{ github.ref_type == 'tag' && ' ' || '--test' }} \
