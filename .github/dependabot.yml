@@ -14,6 +14,14 @@ updates:
     commit-message:
       prefix: ci
     labels: [dependencies]
+    ignore:
+      # home-assistant/builder pulls a Docker image tagged with the very ref
+      # from its `uses:` line, and images are not published for every release.
+      # Dependabot proposed 2026.09.0, which has no image for either
+      # architecture, and that bump fails the build in ~200ms with "not
+      # found". Updating this one stays manual; see the check documented in
+      # build.yml before changing the pin.
+      - dependency-name: home-assistant/builder
 
   # The only Dockerfile with a concrete base image. The others use
   # ${BUILD_FROM}, which Dependabot does not resolve - see the limits below.
