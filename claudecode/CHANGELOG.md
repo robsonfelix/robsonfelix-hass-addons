@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.68] - 2026-11-01
+
+### Changed
+- Image size: the Claude Code install now runs `npm cache clean --force` and removes `/root/.npm` and `/tmp` in the same `RUN` layer. The package pulls a ~240MB platform-native binary via optional dependencies, so ~100MB+ of npm cache was being baked into the image
+
+### Added
+- `.dockerignore` keeps the Docker build context to just the `Dockerfile`, `install-claude.sh`, and `rootfs/` (docs, images, translations, and add-on metadata are consumed by the HA Supervisor, not the image build)
+
 ## [1.2.67] - 2026-11-01
 
 ### Added
