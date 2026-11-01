@@ -67,3 +67,48 @@ configuration:
 
 network:
   7681/tcp: Terminal Web (ttyd)
+  default_task_model:
+    name: Modele par defaut des taches
+    description: >-
+      Modele utilise par les executions headless declenchees par des
+      automatisations lorsque la tache n'en precise pas. Laisser vide pour
+      utiliser la valeur par defaut de Claude Code.
+  default_task_allowed_tools:
+    name: Outils autorises par defaut pour les taches
+    description: >-
+      Permissions d'outils accordees aux executions headless lorsque la tache
+      ne fournit pas sa propre liste. Les executions headless ne peuvent pas
+      repondre aux demandes de permission, donc tout ce qui n'est pas autorise
+      ici (ou dans la tache) est refuse.
+  task_max_runtime_minutes:
+    name: Duree maximale d'execution (minutes)
+    description: Les executions headless sont arretees apres ce nombre de minutes.
+  enable_remote_control:
+    name: Activer Remote Control
+    description: >-
+      Demarre les sessions `claude` du terminal web avec Remote Control actif,
+      pour les piloter depuis claude.ai/code ou l'application mobile Claude.
+  remote_control_session_prefix:
+    name: Prefixe des sessions Remote Control
+    description: >-
+      Prefixe des noms de session affiches dans claude.ai/code et dans
+      l'application mobile, pour distinguer cette instance des autres.
+  remote_control_server:
+    name: Serveur Remote Control
+    description: >-
+      Demarre un serveur Claude Code Remote Control en arriere-plan au
+      demarrage de l'add-on, sans ouvrir le terminal web. Depuis claude.ai/code
+      ou l'application mobile vous pouvez alors lancer de nouvelles sessions
+      dans /homeassistant, et pas seulement piloter une session existante.
+      Redemarre automatiquement s'il s'arrete ; consultez-le avec
+      "tmux attach -t rc". Necessite Activer Remote Control. Note de securite :
+      toute personne pouvant se connecter au compte Claude associe peut
+      demarrer de nouvelles sessions root sur votre hote Home Assistant.
+  remote_control_permission_mode:
+    name: Mode de permission Remote Control
+    description: >-
+      Mode de permission des sessions lancees par le serveur Remote Control.
+      "default" demande votre approbation depuis l'application ; "acceptEdits"
+      approuve les modifications de fichiers ; "auto" laisse Claude decider des
+      actions sures ; "plan" se limite a planifier ; "dontAsk" refuse tout ce
+      qui n'est pas pre-approuve. Ne s'applique que si le serveur est actif.

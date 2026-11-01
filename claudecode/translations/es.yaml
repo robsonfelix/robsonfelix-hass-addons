@@ -96,3 +96,19 @@ configuration:
 
 network:
   7681/tcp: Terminal Web (ttyd)
+  default_task_model:
+    name: Modelo predeterminado de tarea
+    description: >-
+      Modelo usado por las ejecuciones headless lanzadas desde automatizaciones
+      cuando la tarea no especifica uno. Dejar vacio para usar el valor
+      predeterminado de Claude Code.
+  default_task_allowed_tools:
+    name: Herramientas permitidas por defecto en tareas
+    description: >-
+      Permisos de herramientas concedidos a las ejecuciones headless cuando la
+      tarea no trae su propia lista. Las ejecuciones headless no pueden
+      responder a solicitudes de permiso, asi que todo lo que no este permitido
+      aqui (o en la tarea) se deniega.
+  task_max_runtime_minutes:
+    name: Tiempo maximo de ejecucion (minutos)
+    description: Las ejecuciones headless se terminan despues de estos minutos.

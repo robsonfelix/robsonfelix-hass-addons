@@ -1,6 +1,6 @@
 name: Claude Code
 description: Run Claude Code AI assistant inside Home Assistant to create automations, debug issues, and manage your smart home configuration
-version: "1.2.74"
+version: "1.2.75"
 slug: claudecode
 url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
@@ -12,6 +12,7 @@ arch:
 startup: application
 boot: auto
 init: true
+stdin: true
 ingress: true
 ingress_port: 7681
 ingress_stream: true
@@ -32,6 +33,9 @@ map:
   - addon_config:rw
   - backup:ro
 options:
+  default_task_model: ""
+  default_task_allowed_tools: []
+  task_max_runtime_minutes: 30
   enable_mcp: true
   enable_playwright_mcp: false
   playwright_cdp_host: ""
@@ -47,6 +51,10 @@ options:
   remote_control_server: false
   remote_control_permission_mode: default
 schema:
+  default_task_model: str?
+  default_task_allowed_tools:
+    - str
+  task_max_runtime_minutes: int(1,240)
   enable_mcp: bool
   enable_playwright_mcp: bool
   playwright_cdp_host: str?

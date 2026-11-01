@@ -90,6 +90,70 @@ claude --continue
 | `ha-config` | Navigate to config directory |
 | `ha-logs` | View Home Assistant logs |
 
+## Headless Runs from Automations
+
+Any Home Assistant automation can start a headless Claude Code session and
+pass the entire task as data, using the built-in `hassio.addon_stdin`
+service:
+
+```yaml
+- action: hassio.addon_stdin
+  data:
+    addon: XXXXXXXX_claudecode   # your installed slug
+    input:
+      run_id: morning-report
+      prompt: >-
+        Read the temperatures of all climate entities and send a summary
+        to notify.mobile_app_phone.
+      model: sonnet
+      allowed_tools:
+        - mcp__homeassistant__*
+        - Bash
+```
+
+- One of `prompt` (inline text) or `prompt_file` (a path visible inside the
+  add-on, e.g. `/share/task.md`) is required; everything else is optional.
+- `model` and `allowed_tools` fall back to the `default_task_model` /
+  `default_task_allowed_tools` add-on options. Headless runs cannot answer
+  permission prompts, so the allow-list defines what the agent may do.
+- Runs are serialized (one at a time) and killed after
+  `task_max_runtime_minutes`.
+- The add-on fires Home Assistant events your automations can react to:
+  `claudecode_run_started` (`run_id`, `log_path`) and
+  `claudecode_run_finished` (`run_id`, `success`, `exit_code`,
+  `duration_seconds`, `log_path`, `output_tail`).
+- Transcripts are written to the add-on config directory
+  (`task-logs/<run_id>-<timestamp>.log`).
+- Authentication reuses the login you completed in the web terminal.
+- Send `{"abort": true}` on the same channel to hard-kill the active
+  run (finish event carries `aborted: true`); a task sent while another
+  is running is rejected with a `claudecode_run_rejected` event.
+
+### Give it a friendlier name
+
+`hassio.addon_stdin` is generic plumbing. Wrap it once in a script with
+typed fields and every automation gets a readable, first-class action:
+
+```yaml
+script:
+  claude_agent:
+    alias: Claude agent
+    fields:
+      prompt: {selector: {text: {multiline: true}}}
+      run_id: {default: task, selector: {text: {}}}
+      model: {selector: {text: {}}}
+    sequence:
+      - action: hassio.addon_stdin
+        data:
+          addon: XXXXXXXX_claudecode
+          input:
+            run_id: "{{ run_id | default('task') }}"
+            prompt: "{{ prompt | default('') }}"
+            model: "{{ model | default('') }}"
+```
+
+Then: `action: script.claude_agent` with `prompt:` / `run_id:` data.
+
 ## Configuration Options
 
 | Option | Description | Default |

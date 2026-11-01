@@ -1,4 +1,18 @@
 configuration:
+  default_task_model:
+    name: Default task model
+    description: >-
+      Model used by headless automation-triggered runs when the task does
+      not specify one. Leave empty for the Claude Code default.
+  default_task_allowed_tools:
+    name: Default task allowed tools
+    description: >-
+      Tool permissions granted to headless runs when the task does not
+      specify its own list. Headless runs cannot answer permission
+      prompts, so anything not allowed here (or in the task) is denied.
+  task_max_runtime_minutes:
+    name: Task max runtime (minutes)
+    description: Headless runs are terminated after this many minutes.
   enable_mcp:
     name: Enable Home Assistant MCP
     description: >-

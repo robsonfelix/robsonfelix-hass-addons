@@ -87,6 +87,9 @@ COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 # SIGILL). Fix that at the hypervisor (Proxmox CPU type "host"), not here.
 # No version is hardcoded: take latest when it runs, otherwise the newest
 # release that passes a smoke test, so the add-on still builds on such hosts.
+COPY stdin-runner.sh /usr/local/bin/stdin-runner.sh
+RUN chmod +x /usr/local/bin/stdin-runner.sh
+
 # The package pulls a ~240MB platform-native binary via optional deps, so clean
 # the npm cache and temp dirs in the SAME layer - otherwise ~100MB+ of cache
 # gets baked into the image.
@@ -345,6 +348,7 @@ CMD ["/bin/bash", "-c", "\
   elif [ \"$RC_SERVER\" = \"true\" ]; then \
     echo '[WARN] Remote Control server is enabled but was skipped: the claude CLI is not responding'; \
   fi && \
+  { /usr/local/bin/stdin-runner.sh <&0 & } && \
   cd /homeassistant && \
   exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
     --index /usr/share/ttyd/index.html \

@@ -96,3 +96,18 @@ configuration:
 
 network:
   7681/tcp: Terminal Web (ttyd)
+  default_task_model:
+    name: Modelo padrao da tarefa
+    description: >-
+      Modelo usado pelas execucoes headless disparadas por automacoes quando a
+      tarefa nao especifica um. Deixe vazio para usar o padrao do Claude Code.
+  default_task_allowed_tools:
+    name: Ferramentas permitidas por padrao nas tarefas
+    description: >-
+      Permissoes de ferramentas concedidas as execucoes headless quando a
+      tarefa nao traz a propria lista. Execucoes headless nao conseguem
+      responder a pedidos de permissao, entao tudo que nao estiver permitido
+      aqui (ou na tarefa) e negado.
+  task_max_runtime_minutes:
+    name: Tempo maximo de execucao (minutos)
+    description: Execucoes headless sao encerradas apos esse numero de minutos.
