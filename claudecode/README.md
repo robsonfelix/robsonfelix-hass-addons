@@ -351,6 +351,25 @@ Then fully **stop and start** the VM — a reboot alone doesn't re-negotiate the
 
 Until you do, the add-on still works: the build automatically falls back to Claude Code 2.1.112, the last release that runs without AVX, and startup prints a warning explaining this.
 
+### A simple question burned a whole usage block
+
+The add-on does not change how Claude Code consumes tokens — it ships the stock
+CLI. But it pre-authorizes `Read`, `Glob` and `Grep` over `/homeassistant/**`,
+and Home Assistant's own log is frequently tens of thousands of lines. A single
+`Read` of `home-assistant.log` can consume an enormous amount of context, which
+is usually what is behind "I asked something trivial and ran out of credits".
+
+What helps:
+
+- Ask for targeted reads. `grep` for a pattern with a line limit beats reading a
+  log whole: *"grep the last 50 lines mentioning zwave in home-assistant.log"*.
+- Keep the log out of the question when it is not relevant. Claude reaches for
+  it readily because it is pre-authorized.
+- Watch the model. The CLI's default changed to Opus in late 2026, which costs
+  noticeably more on equivalent work; `/model` switches it per session.
+- For recurring tasks, consider the headless runs described above with a narrow
+  `allowed_tools` list, rather than an interactive session with full file access.
+
 ### Terminal not loading
 
 1. Check that the add-on is running (green indicator)

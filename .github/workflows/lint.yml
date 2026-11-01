@@ -1,0 +1,42 @@
+name: Lint
+
+# Roda em todo PR e push na main. Rapido de proposito (~1 min): a ideia e dar
+# sinal antes de alguem gastar tempo com build multi-arquitetura.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  addon:
+    name: Add-on config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint add-on metadata
+        uses: frenck/action-addon-linter@v2
+        with:
+          path: ./claudecode
+
+      - name: Install PyYAML
+        run: pip install --quiet pyyaml
+
+      # Checagem propria: options x schema x traducoes. Existe porque um PR
+      # entrou com tres opcoes traduzidas so para ingles e o fr.yaml estava
+      # sem quatro chaves ha meses -- a opcao aparecia sem nome na interface.
+      - name: Check options, schema and translations
+        run: python3 .github/scripts/check-addon-options.py claudecode
+
+  dockerfile:
+    name: Dockerfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: claudecode/Dockerfile
+          # DL3018: apk sem versao fixa. O add-on segue o Alpine da imagem base
+          # do Home Assistant de proposito; fixar versao quebraria o bump dela.
+          ignore: DL3018
+          failure-threshold: error
