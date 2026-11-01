@@ -6,9 +6,6 @@ url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
   - amd64
   - aarch64
-  - armv7
-  - armhf
-  - i386
 stdin: true
 ingress: true
 ingress_port: 7681
