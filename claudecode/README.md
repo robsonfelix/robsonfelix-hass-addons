@@ -156,22 +156,24 @@ Since tmux captures mouse events, copy/paste works differently:
 
 | Action | How to do it |
 |--------|--------------|
+| **Copy (tmux copy-mode)** | Scroll up (enters copy-mode), select, then copy — lands directly on your clipboard¹ |
 | **Copy** | Hold `Ctrl+Shift` while selecting text with mouse |
 | **Paste** | `Shift+Insert` or middle-click |
 | **Alternative paste** | `Ctrl+Shift+V` (browser dependent) |
+
+¹ OSC 52 needs **HTTPS or localhost** — on plain HTTP, use the modifier-key gesture instead. Bonus: copy-mode copies wrapped lines as one logical line, so long URLs come out intact.
 
 **Note**: Regular right-click paste and simple mouse selection won't work because tmux intercepts these events for scrolling.
 
 #### Authenticating Claude Code (first launch)
 
-The authentication URL can be long and may wrap across multiple lines. To handle this:
+**Click the URL** — this works everywhere, including plain HTTP. It's a real hyperlink (OSC 8): even though it wraps, any row opens the complete URL in a new tab after a confirmation prompt.
 
-1. **Zoom out** your browser (`Ctrl + -` or `Cmd + -`) until the URL fits on a single line
-2. **Click the link** — it should open in a new tab
-3. Complete authentication in the browser and **copy the auth code**
-4. Click back on the terminal and **paste** with `Shift+Insert` or `Ctrl+Shift+V`
+Over **HTTPS** (or localhost), the CLI's **press `c` to copy** hint also works via OSC 52. On plain HTTP browsers block clipboard writes — use the click.
 
-If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL with your mouse to copy it, then paste it into your browser's address bar.
+Don't drag-select the URL: its rows are separate lines and copy with line breaks. If you need it as text, **zoom out** (`Ctrl + -` / `Cmd + -`) until it fits on one line.
+
+Then authenticate in the browser, copy the auth code, and paste it back with `Shift+Insert` or `Ctrl+Shift+V`.
 
 ### Scrolling and Session Persistence Trade-offs
 
@@ -181,6 +183,8 @@ If clicking the link doesn't work, hold `Ctrl+Shift` while selecting the URL wit
 - ✅ Long-running Claude tasks continue in background
 - ✅ Mouse wheel scrolling works (enters copy mode automatically)
 - ✅ 20,000 line scrollback buffer
+- ✅ Copy-mode copies and `claude`'s "press `c` to copy" go straight to your clipboard (HTTPS/localhost only)
+- ✅ OSC 8 hyperlinks (e.g. the `/login` URL) open complete with one click
 - ⚠️ Use middle-click or Shift+Insert to paste (right-click paste may not work)
 
 **Without tmux (`session_persistence: false`):**
