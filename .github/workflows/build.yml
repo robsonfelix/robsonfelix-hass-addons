@@ -62,12 +62,23 @@ jobs:
       # --test constroi sem publicar. Nas tags ele sai e a imagem vai para o
       # ghcr, para o usuario baixar em vez de compilar na propria maquina --
       # o que hoje faz cada instalacao rodar o estagio de build do ttyd.
-      # Pinado no SHA, nao na tag: tags sao moveis, SHA nao. @master executava
-      # o que estivesse no branch no momento do build, sem revisao -- numa
-      # action que recebe GITHUB_TOKEN com permissao de escrita em packages.
-      # Atualizar: ver github.com/home-assistant/builder/releases
+      # ARMADILHA, verificada 2026-11-01: esta action usa o PROPRIO ref do
+      # `uses:` como tag da imagem Docker do builder --
+      #   docker pull ghcr.io/home-assistant/${arch}-builder:${ref}
+      # Entao so da para pinar num ref que TENHA imagem publicada. Pinar numa
+      # release qualquer quebra: 2026.09.0 e 2026.06.0 nao tem imagem, e o
+      # build morre com "not found" antes de comecar.
+      #
+      # Checado no ghcr: das releases recentes, so 2026.03.2 tem imagem, nas
+      # duas arquiteturas. O @master anterior caia no fallback interno da
+      # action para a imagem 2026.02.1 -- ou seja, este pin tambem ATUALIZA o
+      # builder, alem de torna-lo imutavel.
+      #
+      # Antes de trocar este SHA, confirme que a imagem existe:
+      #   ghcr.io/home-assistant/amd64-builder:<sha>
+      #   ghcr.io/home-assistant/aarch64-builder:<sha>
       - name: Build add-on
-        uses: home-assistant/builder@7412f0023ea9b6e58e8bb5059f1660f51376f49a  # 2026.09.0
+        uses: home-assistant/builder@62a1597b84b3461abad9816d9cd92862a2b542c3  # 2026.03.2
         with:
           args: |
             ${{ github.ref_type == 'tag' && ' ' || '--test' }} \
