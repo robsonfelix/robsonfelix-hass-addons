@@ -76,7 +76,7 @@ jobs:
       #   ghcr.io/home-assistant/amd64-builder:<sha>
       #   ghcr.io/home-assistant/aarch64-builder:<sha>
       - name: Build add-on
-        uses: home-assistant/builder@62a1597b84b3461abad9816d9cd92862a2b542c3  # 2026.03.2
+        uses: home-assistant/builder@7412f0023ea9b6e58e8bb5059f1660f51376f49a  # 2026.09.0
         with:
           args: |
             ${{ github.ref_type == 'tag' && ' ' || '--test' }} \
