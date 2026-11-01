@@ -115,9 +115,16 @@ RUN apk add --no-cache --virtual .build-deps \
     && apk del .build-deps \
     && apk add --no-cache libmodbus
 
-# Pre-cache Playwright MCP server (npx cache avoids /usr/local/bin/mcp conflict with hass-mcp)
-ENV NPM_CONFIG_CACHE=/root/.npm
-RUN npx @playwright/mcp --version || true
+# Install @playwright/mcp into /opt to avoid colliding with hass-mcp's
+# /usr/local/bin/mcp (both packages would otherwise install a binary named
+# `mcp` at the same path). Then symlink the actual playwright-mcp binary
+# (different name, no collision) into /usr/local/bin so it lives in PATH and
+# in a conventional location — Claude Code's `auto` permission classifier
+# treats /opt as unusual.
+RUN npm install -g --prefix=/opt/playwright-mcp @playwright/mcp && \
+    ln -s /opt/playwright-mcp/bin/playwright-mcp /usr/local/bin/playwright-mcp && \
+    npm cache clean --force && \
+    rm -rf /root/.npm /tmp/*
 
 # Install Home Assistant CLI (ha command)
 # Pinned and retried: a transient DNS failure used to abort the whole build
@@ -151,6 +158,11 @@ COPY CLAUDE.addon.md /usr/share/claudecode/CLAUDE.addon.md
 COPY rootfs/root/.tmux.conf /root/.tmux.conf
 COPY rootfs/root/.bashrc /root/.bashrc
 
+# Playwright MCP launcher: resolves the Playwright Browser hostname each time
+# the MCP server starts (see the script for why this can't happen at boot).
+COPY rootfs/usr/local/bin/playwright-mcp-launch /usr/local/bin/playwright-mcp-launch
+RUN chmod +x /usr/local/bin/playwright-mcp-launch
+
 # Ensure .bashrc is sourced for login shells too
 RUN echo 'source ~/.bashrc' > /root/.profile
 
@@ -183,16 +195,6 @@ CMD ["/bin/bash", "-c", "\
   ENABLE_MCP=$(jq -r 'if .enable_mcp == null then true else .enable_mcp end' /data/options.json) && \
   ENABLE_PLAYWRIGHT=$(jq -r '.enable_playwright_mcp // false' /data/options.json) && \
   PLAYWRIGHT_HOST=$(jq -r '.playwright_cdp_host // \"\"' /data/options.json) && \
-  if [ -z \"$PLAYWRIGHT_HOST\" ] && [ \"$ENABLE_PLAYWRIGHT\" = \"true\" ]; then \
-    echo '[INFO] Auto-detecting Playwright Browser hostname...' && \
-    PLAYWRIGHT_HOST=$(curl -s -H \"Authorization: Bearer $SUPERVISOR_TOKEN\" http://supervisor/addons | jq -r '.data.addons[] | select(.slug | endswith(\"playwright-browser\") or endswith(\"_playwright-browser\")) | .hostname' | head -1) && \
-    if [ -n \"$PLAYWRIGHT_HOST\" ] && [ \"$PLAYWRIGHT_HOST\" != \"null\" ]; then \
-      echo \"[INFO] Found Playwright Browser: $PLAYWRIGHT_HOST\"; \
-    else \
-      echo '[WARN] Playwright Browser add-on not found, using default hostname'; \
-      PLAYWRIGHT_HOST=\"playwright-browser\"; \
-    fi; \
-  fi && \
   REMOTE_CONTROL=$(jq -r '.enable_remote_control // false' /data/options.json) && \
   RC_SESSION_PREFIX=$(jq -r '.remote_control_session_prefix // \"HomeAssistant\"' /data/options.json) && \
   SETTINGS_FILE=/root/.claude/settings.json && \
@@ -265,9 +267,13 @@ CMD ["/bin/bash", "-c", "\
     echo '[INFO] MCP disabled'; \
   fi && \
   if [ \"$CLAUDE_OK\" = \"true\" ] && [ \"$ENABLE_PLAYWRIGHT\" = \"true\" ]; then \
-    timeout 30 claude mcp add-json playwright \"{\\\"command\\\":\\\"npx\\\",\\\"args\\\":[\\\"--no-install\\\",\\\"@playwright/mcp\\\",\\\"--cdp-endpoint\\\",\\\"http://${PLAYWRIGHT_HOST}:9222\\\"]}\" -s user && \
-    echo \"[INFO] Playwright MCP enabled (CDP: http://${PLAYWRIGHT_HOST}:9222)\"; \
-    echo '[INFO] Make sure the Playwright Browser add-on is installed and running'; \
+    PW_MCP_JSON=$(jq -nc --arg host \"$PLAYWRIGHT_HOST\" '{command:\"/usr/local/bin/playwright-mcp-launch\", env:{PLAYWRIGHT_CDP_HOST:$host}}') && \
+    timeout 30 claude mcp add-json playwright \"$PW_MCP_JSON\" -s user && \
+    if [ -n \"$PLAYWRIGHT_HOST\" ]; then \
+      echo \"[INFO] Playwright MCP enabled (host override: $PLAYWRIGHT_HOST)\"; \
+    else \
+      echo '[INFO] Playwright MCP enabled (hostname auto-detected each time the MCP server starts)'; \
+    fi; \
   elif [ \"$ENABLE_PLAYWRIGHT\" = \"true\" ]; then \
     echo '[WARN] Playwright MCP is enabled but was skipped: the claude CLI is not responding'; \
   else \

@@ -1,0 +1,23 @@
+#!/bin/bash
+# Resolves the Playwright Browser hostname at MCP-spawn time. HA assigns
+# hostnames like <repo-id>-playwright-browser that we can't hardcode, and the
+# user may install Playwright Browser after Claude Code has already started.
+# PLAYWRIGHT_CDP_HOST env var (set from the playwright_cdp_host option) wins.
+# Otherwise ask Supervisor for any add-on whose slug contains "playwright-browser".
+HOST="$PLAYWRIGHT_CDP_HOST"
+if [ -z "$HOST" ]; then
+  # The /addons list endpoint exposes .slug but not .hostname — hostname only
+  # lives on /addons/{slug}/info. HA add-on hostnames are deterministic: the
+  # slug with underscores replaced by hyphens. Derive it locally so this works
+  # without needing per-add-on info access.
+  SLUG=$(curl -s -H "Authorization: Bearer $SUPERVISOR_TOKEN" http://supervisor/addons \
+    | jq -r '.data.addons[] | select(.slug | test("playwright-browser")) | .slug' \
+    | head -1)
+  [ -n "$SLUG" ] && HOST=$(echo "$SLUG" | tr '_' '-')
+fi
+if [ -z "$HOST" ] || [ "$HOST" = "null" ]; then
+  echo "[playwright-launch] Playwright Browser add-on not found via Supervisor API." >&2
+  echo "[playwright-launch] Install/start it, or set the playwright_cdp_host option." >&2
+  exit 1
+fi
+exec /usr/local/bin/playwright-mcp --cdp-endpoint "http://$HOST:9222" "$@"
