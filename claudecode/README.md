@@ -208,6 +208,8 @@ Don't drag-select the URL: its rows are separate lines and copy with line breaks
 
 Then authenticate in the browser, copy the auth code, and paste it back with `Shift+Insert` or `Ctrl+Shift+V`.
 
+If you would rather have the URL as plain text — to open it on another machine, or if your browser blocks the click — run `claude-login-url` in a second tmux window (`Ctrl+b c`). It reassembles the full URL from the scrollback even when wrapped and writes it to `/homeassistant/claude-login-url.txt` (mode 600). Delete that file when you are done: it lives in your config directory, which is included in HA backups. The helper needs `session_persistence: true`; without tmux, native browser copy works directly.
+
 ### Scrolling and Session Persistence Trade-offs
 
 **With tmux (`session_persistence: true`):**
@@ -253,7 +255,7 @@ Claude Code manages its own authentication. If you have issues:
 2. Follow the prompts to log in or enter your API key
 3. Credentials are saved automatically for future sessions
 
-**Can't copy the URL or paste the auth code?** The terminal uses tmux, which changes how copy/paste works. See [Copy and Paste in tmux](#copy-and-paste-in-tmux) for instructions.
+**Can't copy the URL or paste the auth code?** The terminal uses tmux, which changes how copy/paste works, and the CLI's own "press `c` to copy" hint doesn't work in this browser terminal (see [Authenticating Claude Code](#authenticating-claude-code-first-launch) for the `claude-login-url` workaround). See [Copy and Paste in tmux](#copy-and-paste-in-tmux) for general copy/paste instructions.
 
 ### hass-mcp not working
 
