@@ -47,7 +47,7 @@ jobs:
         addon: [claudecode, playwright-browser, auto-monocle]
     steps:
       - uses: actions/checkout@v4
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: ${{ matrix.addon }}/Dockerfile
           # DL3018: apk without a pinned version. The add-on deliberately
