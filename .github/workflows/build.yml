@@ -11,11 +11,33 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ['v*']
+    # Monorepo: a tag diz QUAL add-on lancar. 'claudecode/v1.2.76',
+    # 'playwright-browser/v0.1.13'. O formato antigo 'v1.2.x' era da
+    # claudecode por convencao implicita e continua aceito.
+    tags: ['*/v*', 'v*']
 
 jobs:
+  # Descobre qual add-on construir. Numa tag vem do proprio nome dela; fora de
+  # tag so a claudecode e construida, porque e a que muda e porque a imagem
+  # base do playwright-browser tem ~2GB e nao vale baixar em todo PR.
+  target:
+    runs-on: ubuntu-latest
+    outputs:
+      addon: ${{ steps.pick.outputs.addon }}
+    steps:
+      - id: pick
+        run: |
+          REF='${{ github.ref_name }}'
+          case "$REF" in
+            */v*) ADDON="${REF%%/v*}" ;;
+            *)    ADDON=claudecode ;;
+          esac
+          echo "addon=$ADDON" >> "$GITHUB_OUTPUT"
+          echo "Building: $ADDON"
+
   build:
-    name: ${{ matrix.arch }}
+    needs: target
+    name: ${{ needs.target.outputs.addon }} (${{ matrix.arch }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -46,7 +68,7 @@ jobs:
           args: |
             ${{ github.ref_type == 'tag' && ' ' || '--test' }} \
             --${{ matrix.arch }} \
-            --target claudecode \
-            --image claudecode-{arch} \
+            --target ${{ needs.target.outputs.addon }} \
+            --image ${{ needs.target.outputs.addon }}-{arch} \
             --docker-hub ghcr.io/${{ github.repository_owner }} \
             --addon
