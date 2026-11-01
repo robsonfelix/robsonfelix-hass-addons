@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.66] - 2026-11-01
+
+### Added
+- `poppler-utils` is now installed, so Claude Code's `Read` tool can open PDF files (#45). `Read` renders PDF pages by shelling out to `pdftoppm`, which ships in that package and was missing from the image, so every PDF read failed with `pdftoppm is not installed. Install poppler-utils ... to enable PDF page rendering`
+
+  This could not be worked around at runtime: `apk` returns `Permission denied` on exec inside the running add-on even as root, so the package has to be baked in at build time
+
+  Verified present in Alpine 3.21 `main` as `poppler-utils 24.02.0-r2` for `x86_64`, `aarch64` and `armv7`. It costs roughly 20 MiB of image size, mostly `poppler`, `cairo`, `libx11` and `nss` — there is no lighter option, because `Read` invokes `pdftoppm` specifically rather than any PDF renderer
+
+### Fixed
+- `terminal_theme: light` had no effect (#49). ttyd's `-t key=value` splits on the first `=`, so `-t "theme=background=#eff1f5,foreground=..."` set `theme` to the bare string `background=#eff1f5,...`. The client merges preferences with `Object.assign({}, defaultDarkTheme, theme)`, and a string contributes no keys, so the built-in dark theme survived untouched — the setting appeared ignored rather than failing. `theme` is now passed as a JSON object
+
+- The AVX check is now architecture-aware (#54, likely also #50). `grep -qw avx /proc/cpuinfo` was run unconditionally, but AVX is an x86 instruction set and the string can never appear on `aarch64`/`armv7`/`armhf`. Every ARM host therefore took the "missing AVX" branch on every boot and printed a warning telling the user to change a Proxmox VM CPU type that does not exist. The check now runs only on `x86_64`/`amd64`/`i[3-6]86`
+
+- The startup log reported the build-time version instead of the installed one. `[INFO] Claude Code $BUILT_VERSION (verified at build time)` echoed `/etc/claude-code-version` regardless of what npm had actually installed, so the log and `claude --version` disagreed — reported as 2.1.263 against an installed 2.1.314. The log now reports the installed version, falling back to the build-time value only when the CLI cannot be queried
+
+- `auto_update_claude: true` ran `npm update -g` on every boot even when the installed version was already current. With the 30s smoke test and the 300s rollback behind it, a boot could spend up to ~10 minutes before `ttyd` bound its port, and Home Assistant reported the add-on as unhealthy. Startup now asks the registry for the current version first and skips the install entirely when it matches — the common case, which costs seconds instead of minutes
+
+- Rollback after a failed update reinstalled `$BUILT_VERSION` rather than the version that was running a moment earlier, silently downgrading hosts that had updated successfully in the past. It now rolls back to the previously installed version
+
+- On a CPU that genuinely lacks AVX, `auto_update_claude: true` would install a release that cannot run, fail the smoke test and roll back on every boot. The update is now skipped on those hosts with an explicit message
+
 ## [1.2.65] - 2026-07-08
 
 ### Security

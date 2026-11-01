@@ -38,6 +38,7 @@ RUN apk add --no-cache \
     openssl \
     ripgrep \
     p7zip \
+    poppler-utils \
     socat \
     docker-cli \
     && update-ca-certificates
@@ -225,23 +226,43 @@ CMD ["/bin/bash", "-c", "\
     echo '[INFO] Removed a Supervisor token that older versions persisted into settings.json'; \
     echo '[INFO] That file lives in your HA config dir and is included in backups'; \
   fi && \
-  if ! grep -qw avx /proc/cpuinfo 2>/dev/null; then \
-    echo '[WARN] This CPU does not expose AVX. Claude Code 2.1.113+ is a Bun-compiled'; \
-    echo '[WARN] binary that requires it, so this add-on is running an older release.'; \
-    echo '[WARN] On Proxmox set the VM CPU type to \"host\" (or x86-64-v3), then fully'; \
-    echo '[WARN] stop and start the VM. Verify with: grep -o -m1 avx2 /proc/cpuinfo'; \
+  ARCH=$(uname -m) && \
+  HAS_AVX=true && \
+  if echo \"$ARCH\" | grep -qE '^(x86_64|amd64|i[3-6]86)$'; then \
+    if ! grep -qw avx /proc/cpuinfo 2>/dev/null; then \
+      HAS_AVX=false; \
+      echo '[WARN] This CPU does not expose AVX. Claude Code 2.1.113+ is a Bun-compiled'; \
+      echo '[WARN] binary that requires it, so this add-on is running an older release.'; \
+      echo '[WARN] On Proxmox set the VM CPU type to \"host\" (or x86-64-v3), then fully'; \
+      echo '[WARN] stop and start the VM. Verify with: grep -o -m1 avx2 /proc/cpuinfo'; \
+    fi; \
   fi && \
   BUILT_VERSION=$(cat /etc/claude-code-version 2>/dev/null || echo unknown) && \
+  INSTALLED_VERSION= && \
+  if [ \"$HAS_AVX\" = \"true\" ]; then \
+    INSTALLED_VERSION=$(timeout 30 claude --version < /dev/null 2>/dev/null | awk '{print $1}'); \
+  fi; \
+  [ -n \"$INSTALLED_VERSION\" ] || INSTALLED_VERSION=$BUILT_VERSION; \
   AUTO_UPDATE=$(jq -r '.auto_update_claude // false' /data/options.json) && \
-  if [ \"$AUTO_UPDATE\" = \"true\" ]; then \
-    echo \"[WARN] auto_update_claude=true; the build verified $BUILT_VERSION, an update may install a release that cannot run\" && \
-    timeout 300 npm update -g @anthropic-ai/claude-code || echo '[WARN] Update failed; keeping the installed version'; \
-    if ! timeout 30 claude --version < /dev/null > /dev/null 2>&1; then \
-      echo \"[ERROR] The updated Claude Code does not run here; rolling back to $BUILT_VERSION\" && \
-      timeout 300 npm install -g @anthropic-ai/claude-code@$BUILT_VERSION || echo '[ERROR] Rollback failed'; \
-    fi; \
+  if [ \"$AUTO_UPDATE\" != \"true\" ]; then \
+    echo \"[INFO] Claude Code $INSTALLED_VERSION\"; \
+  elif [ \"$HAS_AVX\" = \"false\" ]; then \
+    echo '[WARN] auto_update_claude is on, but this CPU lacks AVX; skipping the update'; \
+    echo \"[INFO] Claude Code $INSTALLED_VERSION\"; \
   else \
-    echo \"[INFO] Claude Code $BUILT_VERSION (verified at build time)\"; \
+    LATEST=$(timeout 60 npm view @anthropic-ai/claude-code version 2>/dev/null || echo ''); \
+    if [ -z \"$LATEST\" ]; then \
+      echo \"[WARN] npm registry unreachable; keeping Claude Code $INSTALLED_VERSION\"; \
+    elif [ \"$LATEST\" = \"$INSTALLED_VERSION\" ]; then \
+      echo \"[INFO] Claude Code $INSTALLED_VERSION (already current)\"; \
+    else \
+      echo \"[INFO] Updating Claude Code $INSTALLED_VERSION -> $LATEST\"; \
+      timeout 300 npm install -g @anthropic-ai/claude-code@$LATEST || echo '[WARN] Update failed; keeping the installed version'; \
+      if ! timeout 30 claude --version < /dev/null > /dev/null 2>&1; then \
+        echo \"[ERROR] Claude Code $LATEST does not run here; rolling back to $INSTALLED_VERSION\"; \
+        timeout 300 npm install -g @anthropic-ai/claude-code@$INSTALLED_VERSION || echo '[ERROR] Rollback failed'; \
+      fi; \
+    fi; \
   fi && \
   if timeout 30 claude --version < /dev/null > /dev/null 2>&1; then \
     CLAUDE_OK=true; \
@@ -283,9 +304,9 @@ CMD ["/bin/bash", "-c", "\
     echo '[INFO] Remote Control auto-start disabled'; \
   fi && \
   if [ \"$THEME\" = \"dark\" ]; then \
-    COLORS='background=#1e1e2e,foreground=#cdd6f4,cursor=#f5e0dc'; \
+    COLORS='{\"background\":\"#1e1e2e\",\"foreground\":\"#cdd6f4\",\"cursor\":\"#f5e0dc\"}'; \
   else \
-    COLORS='background=#eff1f5,foreground=#4c4f69,cursor=#dc8a78'; \
+    COLORS='{\"background\":\"#eff1f5\",\"foreground\":\"#4c4f69\",\"cursor\":\"#dc8a78\"}'; \
   fi && \
   if [ \"$SESSION_PERSIST\" = \"true\" ]; then \
     SHELL_CMD='tmux new-session -A -s claude'; \
