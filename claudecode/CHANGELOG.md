@@ -2,8 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.70] - 2026-11-01
+## [1.2.71] - 2026-11-01
 
+
+### Added
+- `extra_npm_packages` option: list of npm package specs to install on every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). The bin directory is on `PATH`. Use it to add custom MCP servers without forking the Dockerfile; a failed install logs a `[WARN]` but never blocks startup
+
+## [1.2.70] - 2026-11-01
 
 ### Fixed
 - Playwright Browser hostname auto-detection never worked: startup read `.hostname` from the Supervisor `/addons` list endpoint, but that endpoint doesn't return `hostname` (it only exists on `/addons/{slug}/info`), so detection always fell through to the literal `playwright-browser` fallback — which never resolves on HA's network (real add-on hostnames look like `<repo-id>-playwright-browser`). The hostname is now derived from the add-on `.slug` (underscores → hyphens; HA add-on hostnames are deterministic) by a small launcher script that runs each time the MCP server starts — so it also works when Playwright Browser is installed or started *after* Claude Code, without restarting this add-on. The `playwright_cdp_host` override still takes precedence

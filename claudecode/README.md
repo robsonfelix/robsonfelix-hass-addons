@@ -104,12 +104,40 @@ claude --continue
 | `auto_update_claude` | Auto-update Claude Code on startup (rolls back automatically if the new release cannot run) | true |
 | `enable_remote_control` | View and steer the session from claude.ai/code or the Claude mobile app. See the security note below | false |
 | `remote_control_session_prefix` | Prefix for auto-generated Remote Control session names | HomeAssistant |
+| `extra_npm_packages` | List of npm package specs to install at every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). Bin dir is on `PATH`. Use to add custom MCP servers without forking the Dockerfile. | `[]` |
 
 ### Remote Control
 
 With `enable_remote_control`, sessions can be driven from `claude.ai/code` or the Claude mobile app (requires a Pro, Max, Team, or Enterprise subscription; API keys are not supported).
 
 **Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it. Leave this off unless you need it.
+
+### Custom MCP servers (`extra_npm_packages`)
+
+Add-on updates rebuild the container and wipe anything you `npm install -g` manually. `extra_npm_packages` re-installs a list of packages on every container start, to a persistent path on the HA volume.
+
+**Install:**
+
+1. Add packages to the option in the add-on Configuration tab:
+   ```yaml
+   extra_npm_packages:
+     - "@modelcontextprotocol/server-filesystem"
+     - "some-other-mcp@1.4.2"
+     - "@vendor/mcp"
+   ```
+2. Restart the add-on. Watch the log for `[INFO] Installing extra_npm_packages: ...`.
+3. Open a terminal in Claude Code and register the MCP server:
+   ```bash
+   claude mcp add-json filesystem '{"command":"mcp-server-filesystem","args":["/homeassistant"]}' -s user
+   ```
+   The binary lives at `/homeassistant/.claudecode/npm-global/bin/<bin-name>` and that directory is on `PATH`, so referencing it by name works.
+
+The MCP registration itself is persistent (stored in `~/.claude/settings.json`, which is symlinked to the HA volume), so step 3 is one-time.
+
+**Caveats:**
+- Re-installs on every container start; unpinned packages get the latest each time.
+- A bad package name logs `[WARN]` but doesn't stop the add-on.
+- Don't know the binary name? Run `ls /homeassistant/.claudecode/npm-global/bin/` after install.
 
 ## File Locations
 

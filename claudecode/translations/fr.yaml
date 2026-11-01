@@ -48,6 +48,14 @@ configuration:
       Vérifiez et installez automatiquement les mises à jour de Claude Code au
       démarrage du module complémentaire. Garde Claude Code à jour sans nécessiter
       de changements de version du module complémentaire.
+  extra_npm_packages:
+    name: Paquets npm Supplémentaires
+    description: >-
+      Spécifications de paquets npm (p. ex. « @modelcontextprotocol/server-filesystem »
+      ou « some-mcp@1.4.2 ») installées à chaque démarrage du module complémentaire
+      dans un répertoire persistant du volume HA ; elles survivent donc aux mises à
+      jour et reconstructions du module complémentaire. Utilisez cette option pour
+      ajouter des serveurs MCP personnalisés sans forker le module complémentaire.
 
 network:
   7681/tcp: Terminal Web (ttyd)
