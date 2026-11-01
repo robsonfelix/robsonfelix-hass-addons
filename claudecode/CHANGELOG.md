@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.2.76] - 2026-11-01
 
+### Fixed
+- Translations added in 1.2.75 for `default_task_model`, `default_task_allowed_tools` and `task_max_runtime_minutes` (plus the four remote-control keys in `fr.yaml`) were appended to the end of each file, which placed them under the `network:` section instead of `configuration:`. The Supervisor reads option names from `configuration:`, so those options rendered untranslated. Caught by the new CI check on its first run
+
 ### Changed
 - Removed four redundant keys from `config.yaml`, flagged by the add-on linter that landed with CI in this release. `startup: application`, `boot: auto` and `init: true` all restated the Supervisor's own defaults, and `uart: true` is implied by `full_access: true`. No behaviour change — the effective configuration is identical
 

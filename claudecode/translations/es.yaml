@@ -93,9 +93,6 @@ configuration:
       las ediciones de archivos; "auto" deja que Claude decida qué acciones son
       seguras; "plan" solo planifica; "dontAsk" rechaza todo lo no preaprobado. Solo
       aplica cuando el Servidor de Control Remoto está habilitado.
-
-network:
-  7681/tcp: Terminal Web (ttyd)
   default_task_model:
     name: Modelo predeterminado de tarea
     description: >-
@@ -112,3 +109,5 @@ network:
   task_max_runtime_minutes:
     name: Tiempo maximo de ejecucion (minutos)
     description: Las ejecuciones headless se terminan despues de estos minutos.
+network:
+  7681/tcp: Terminal Web (ttyd)

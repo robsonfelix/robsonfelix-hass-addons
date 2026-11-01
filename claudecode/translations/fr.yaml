@@ -64,9 +64,6 @@ configuration:
       Claude Code, « continue » reprend la session la plus récente
       (claude --continue). À la sortie de Claude Code, vous retrouvez un shell
       normal.
-
-network:
-  7681/tcp: Terminal Web (ttyd)
   default_task_model:
     name: Modele par defaut des taches
     description: >-
@@ -112,3 +109,5 @@ network:
       approuve les modifications de fichiers ; "auto" laisse Claude decider des
       actions sures ; "plan" se limite a planifier ; "dontAsk" refuse tout ce
       qui n'est pas pre-approuve. Ne s'applique que si le serveur est actif.
+network:
+  7681/tcp: Terminal Web (ttyd)
