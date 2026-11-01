@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.13] - 2026-11-01
+
+### Changed
+- Upgraded the base image to `mcr.microsoft.com/playwright:v1.64.1-noble` (from `v1.57.0-noble`). The add-on was seven minor Playwright releases behind, while the Claude Code add-on installs `@playwright/mcp` unpinned and therefore tracks the newest client — currently one built against `playwright 1.65.0-alpha`. Client and browser are released together and expect to match, so the gap was widening silently with every rebuild
+
+### Fixed
+- `README.md` quoted `v1.50.0-noble` as the base image, two upgrades out of date. The version number is gone from the README entirely: it points at the Dockerfile instead, which is the only place that cannot go stale
+- Documented the version coupling between this add-on's browser and the `@playwright/mcp` client the Claude Code add-on installs, including what a mismatch looks like
+
+## [0.1.12] - 2026-02-24
+
+### Fixed
+- The Dockerfile uses `mcr.microsoft.com/playwright` as its base image directly instead of the `BUILD_FROM` arg. The Home Assistant builder's image regex does not accept MCR references, so the arg silently fell back to the Alpine base and the resulting image had no Chromium. This entry was reconstructed after the fact — 0.1.12 shipped without a changelog entry, which the repository's new CI check now prevents
+
 ## [0.1.11] - 2026-02-23
 
 ### Added

@@ -6,7 +6,22 @@ Headless Chromium browser with Chrome DevTools Protocol (CDP) endpoint for brows
 
 This add-on runs a headless Chromium browser that exposes a CDP endpoint, allowing other add-ons (like Claude Code) to connect and perform browser automation tasks.
 
-Based on the official [Microsoft Playwright Docker image](https://playwright.dev/docs/docker) (`mcr.microsoft.com/playwright:v1.50.0-noble`).
+Based on the official [Microsoft Playwright Docker image](https://playwright.dev/docs/docker).
+The exact tag is pinned in [`Dockerfile`](./Dockerfile) — check there rather than
+trusting a version number quoted here, which is how this line went stale for
+seven releases.
+
+### Version coupling with Claude Code
+
+Playwright's client and browser are released together and expect to match. The
+Claude Code add-on installs `@playwright/mcp` **unpinned**, so each rebuild picks
+up the newest release, while the browser served here moves only when this
+Dockerfile is bumped. The two therefore drift apart on their own.
+
+CDP is stable enough that a modest gap usually works, but it is not a supported
+combination. If browser automation starts failing in ways that look like protocol
+errors, compare the Playwright version bundled with `@playwright/mcp` against the
+tag in this add-on's Dockerfile, and bump this one.
 
 ## Installation
 

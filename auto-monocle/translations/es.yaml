@@ -19,6 +19,13 @@ configuration:
     description: >-
       Lista opcional de filtros para limitar cuales camaras se descubren.
       Ingresa nombres de camaras o entity IDs para coincidir.
+  stream_quality:
+    name: Calidad de transmision
+    description: >-
+      Calidad de las transmisiones de camara publicadas en Monocle. "high"
+      mantiene la resolucion y el bitrate de origen; "medium" y "low" sacrifican
+      detalle de imagen por ancho de banda, util cuando varias camaras comparten
+      una conexion lenta.
 
 network:
   443/tcp: Monocle Gateway HTTPS (requerido)

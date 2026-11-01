@@ -3,7 +3,7 @@
 # NOTE: hardcoded instead of using BUILD_FROM/build.yaml because the HA
 # Supervisor's build_from regex rejects single-segment image paths like
 # "mcr.microsoft.com/playwright", silently falling back to the Alpine base.
-FROM mcr.microsoft.com/playwright:v1.57.0-noble
+FROM mcr.microsoft.com/playwright:v1.64.1-noble
 
 # Labels
 LABEL maintainer="Robson Felix"

@@ -161,6 +161,13 @@ Then: `action: script.claude_agent` with `prompt:` / `run_id:` data.
 | `enable_mcp` | Enable HA integration | true |
 | `enable_playwright_mcp` | Enable browser automation via the Playwright Browser add-on | false |
 | `playwright_cdp_host` | Override the Playwright Browser hostname (auto-detected when empty) | "" |
+
+> **Playwright version coupling.** `@playwright/mcp` is installed unpinned, so
+> every rebuild of this add-on picks up the newest client, while the browser it
+> drives comes from the Playwright Browser add-on and only moves when that
+> add-on's base image is bumped. The two drift apart on their own. CDP tolerates
+> a modest gap, but if browser automation starts failing with protocol errors,
+> compare the two versions before looking anywhere else.
 | `terminal_font_size` | Font size (10-24) | 14 |
 | `terminal_theme` | dark or light | dark |
 | `working_directory` | Start directory | /homeassistant |

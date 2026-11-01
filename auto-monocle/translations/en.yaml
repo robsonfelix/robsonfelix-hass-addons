@@ -19,6 +19,12 @@ configuration:
     description: >-
       Optional list of filters to limit which cameras are discovered.
       Enter camera names or entity IDs to match.
+  stream_quality:
+    name: Stream Quality
+    description: >-
+      Quality of the camera streams published to Monocle. "high" keeps the
+      source resolution and bitrate, "medium" and "low" trade image detail for
+      bandwidth — useful when several cameras share a slow uplink.
 
 network:
   443/tcp: Monocle Gateway HTTPS (required)

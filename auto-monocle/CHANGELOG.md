@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.12] - 2026-11-01
+
+### Fixed
+- `stream_quality` had no translation in any of the three languages, so the option rendered without a name or description in the Home Assistant UI. Found by the repository's new CI check, which now verifies every add-on's options against its schema and all of its translation files
+
 ## [0.1.11] - 2026-01-14
 
 ### Fixed
