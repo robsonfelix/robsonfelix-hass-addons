@@ -1,0 +1,40 @@
+# Mantem atualizado o que e pinado neste repositorio.
+#
+# Existe porque pin imutavel resolve um problema e cria outro: o
+# home-assistant/builder esta fixado num SHA e, sem isto, ficaria em
+# 2026.03.2 para sempre. E porque a imagem do playwright-browser derivou sete
+# versoes menores (1.50 -> 1.57 enquanto o estavel chegava a 1.64) sem que
+# nada avisasse, ate alguem reparar na mao.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    labels: [dependencies]
+
+  # Unico Dockerfile com imagem base concreta. Os outros usam ${BUILD_FROM},
+  # que o Dependabot nao resolve -- ver a limitacao abaixo.
+  - package-ecosystem: docker
+    directory: "/playwright-browser"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: build
+    labels: [dependencies]
+
+# O QUE ISTO NAO COBRE, e continua sendo manual:
+#
+#   claudecode/build.yaml e auto-monocle/build.yaml
+#     As imagens base reais (ghcr.io/home-assistant/*-base-python:3.13-alpine*)
+#     ficam ai, nao no Dockerfile. Dependabot nao le build.yaml.
+#
+#   claudecode/Dockerfile
+#     TTYD_CLIENT_COMMIT  commit fixo do fonte do ttyd
+#     ttyd 1.7.7          versao do binario, na URL de download
+#     corepack@0.35.0     fixado dentro de um RUN
+#
+#   claudecode: @playwright/mcp
+#     Instalado sem pin de proposito; ver a nota de acoplamento no README.
