@@ -12,7 +12,7 @@ jobs:
     name: Add-on config
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Lint claudecode
         uses: frenck/action-addon-linter@v2
@@ -46,7 +46,7 @@ jobs:
       matrix:
         addon: [claudecode, playwright-browser, auto-monocle]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: ${{ matrix.addon }}/Dockerfile
