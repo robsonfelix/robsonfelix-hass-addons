@@ -50,7 +50,7 @@ jobs:
         # Assistant since 2025.12. These two are what is left.
         arch: [amd64, aarch64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Log in to ghcr.io
         if: github.ref_type == 'tag'
