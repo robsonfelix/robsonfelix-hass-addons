@@ -206,6 +206,8 @@ CMD ["/bin/bash", "-c", "\
   PLAYWRIGHT_HOST=$(jq -r '.playwright_cdp_host // \"\"' /data/options.json) && \
   REMOTE_CONTROL=$(jq -r '.enable_remote_control // false' /data/options.json) && \
   RC_SESSION_PREFIX=$(jq -r '.remote_control_session_prefix // \"HomeAssistant\"' /data/options.json) && \
+  RC_SERVER=$(jq -r '.remote_control_server // false' /data/options.json) && \
+  RC_PERMISSION_MODE=$(jq -r '.remote_control_permission_mode // \"default\"' /data/options.json) && \
   SETTINGS_FILE=/root/.claude/settings.json && \
   [ -f \"$SETTINGS_FILE\" ] || echo '{}' > \"$SETTINGS_FILE\" && \
   if jq -e '.mcpServers.homeassistant.env.HASS_TOKEN' \"$SETTINGS_FILE\" > /dev/null 2>&1; then \
@@ -332,6 +334,17 @@ CMD ["/bin/bash", "-c", "\
     fi; \
   fi && \
   if [ \"$REMOTE_CONTROL\" = \"true\" ]; then export CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=\"$RC_SESSION_PREFIX\"; fi && \
+  if [ \"$REMOTE_CONTROL\" = \"true\" ] && [ \"$RC_SERVER\" = \"true\" ] && [ \"$CLAUDE_OK\" = \"true\" ]; then \
+    if tmux new-session -d -s rc -c /homeassistant \"while true; do claude remote-control --permission-mode $RC_PERMISSION_MODE; echo '[rc] claude remote-control exited, restarting in 30s'; sleep 30; done\"; then \
+      echo \"[INFO] Remote Control server started (permission mode: $RC_PERMISSION_MODE) - view it with: tmux attach -t rc\"; \
+    else \
+      echo '[WARN] Failed to start the Remote Control server'; \
+    fi; \
+  elif [ \"$RC_SERVER\" = \"true\" ] && [ \"$REMOTE_CONTROL\" != \"true\" ]; then \
+    echo '[WARN] remote_control_server requires enable_remote_control - server not started'; \
+  elif [ \"$RC_SERVER\" = \"true\" ]; then \
+    echo '[WARN] Remote Control server is enabled but was skipped: the claude CLI is not responding'; \
+  fi && \
   cd /homeassistant && \
   exec ttyd --port 7681 --writable --ping-interval 30 --max-clients 5 \
     --index /usr/share/ttyd/index.html \

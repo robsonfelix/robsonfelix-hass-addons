@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.74] - 2026-11-01
+
+
+### Added
+- `remote_control_server` option (#26). `enable_remote_control` only affects sessions started in the web terminal, so nothing was reachable remotely until someone opened the terminal after each boot. With this option on (it also requires `enable_remote_control`), the add-on starts `claude remote-control` in a background tmux session (`rc`) at boot, so claude.ai/code and the Claude mobile app can start new sessions in `/homeassistant` without opening the terminal. It restarts after 30s if it exits, and is skipped with a warning when the startup health gate finds the CLI unresponsive
+- `remote_control_permission_mode` option: permission mode for sessions started through the server (`default`, `acceptEdits`, `auto`, `plan`, `dontAsk`)
+
 ## [1.2.73] - 2026-11-01
 
 

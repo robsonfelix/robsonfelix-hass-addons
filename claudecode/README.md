@@ -106,12 +106,16 @@ claude --continue
 | `enable_remote_control` | View and steer the session from claude.ai/code or the Claude mobile app. See the security note below | false |
 | `remote_control_session_prefix` | Prefix for auto-generated Remote Control session names | HomeAssistant |
 | `extra_npm_packages` | List of npm package specs to install at every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). Bin dir is on `PATH`. Use to add custom MCP servers without forking the Dockerfile. | `[]` |
+| `remote_control_server` | Run a Remote Control server at boot so you can start new sessions from claude.ai/code or the Claude mobile app. Requires `enable_remote_control` | false |
+| `remote_control_permission_mode` | Permission mode for sessions started through the server: `default`, `acceptEdits`, `auto`, `plan` or `dontAsk` | default |
 
 ### Remote Control
 
 With `enable_remote_control`, sessions can be driven from `claude.ai/code` or the Claude mobile app (requires a Pro, Max, Team, or Enterprise subscription; API keys are not supported).
 
-**Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it. Leave this off unless you need it.
+`enable_remote_control` on its own applies to sessions you start in the web terminal, so nothing is reachable until you open it and run `claude`. Turn on `remote_control_server` as well to run `claude remote-control` in the background as soon as the add-on boots. It shows up in claude.ai/code and the mobile app, where you can start new sessions that run in `/homeassistant`. It runs in its own tmux session (`tmux attach -t rc` to view it) and restarts automatically if it exits. `remote_control_permission_mode` sets the permission mode for those sessions.
+
+**Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it, and with `remote_control_server` on they can start new sessions on it at any time. Leave this off unless you need it.
 
 ### Custom MCP servers (`extra_npm_packages`)
 

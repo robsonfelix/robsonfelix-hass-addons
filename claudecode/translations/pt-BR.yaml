@@ -75,6 +75,24 @@ configuration:
       persistente no volume do HA, sobrevivendo a atualizações e reconstruções do
       add-on. Use para adicionar servidores MCP personalizados sem fazer fork do
       add-on.
+  remote_control_server:
+    name: Servidor de Controle Remoto
+    description: >-
+      Inicia um servidor de Controle Remoto do Claude Code em segundo plano quando o
+      add-on inicia, sem abrir o terminal web. Pelo claude.ai/code ou pelo aplicativo
+      móvel do Claude você pode iniciar novas sessões que rodam em /homeassistant, não
+      apenas controlar uma existente. Reinicia automaticamente se encerrar; veja com
+      "tmux attach -t rc". Requer Habilitar Controle Remoto. Nota de segurança:
+      qualquer pessoa que consiga entrar na conta Claude vinculada poderá iniciar
+      novas sessões como root no seu servidor Home Assistant.
+  remote_control_permission_mode:
+    name: Modo de Permissão do Controle Remoto
+    description: >-
+      Modo de permissão para sessões iniciadas pelo servidor de Controle Remoto.
+      "default" pede aprovação das ações pelo aplicativo; "acceptEdits" aprova edições
+      de arquivos; "auto" deixa o Claude decidir quais ações são seguras; "plan" apenas
+      planeja; "dontAsk" nega tudo que não foi pré-aprovado. Aplicável apenas quando o
+      Servidor de Controle Remoto está habilitado.
 
 network:
   7681/tcp: Terminal Web (ttyd)
