@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.69] - 2026-11-01
+
+
+### Added
+- `~/.claude/CLAUDE.user.md` — a user-managed instructions file, created empty and whose content the add-on never touches. It's imported by the add-on-managed `~/.claude/CLAUDE.md`, so anything you put there loads into every Claude Code session and survives restarts and add-on rebuilds. Created empty on purpose, and documented in the README rather than in the model-visible files: both `CLAUDE.md` and `CLAUDE.user.md` are fed to the model verbatim, so explanatory boilerplate in either would be injected into every session
+
+### Changed
+- The add-on-managed `~/.claude/CLAUDE.md` is now a static `CLAUDE.addon.md` file copied into the image, instead of a ~55-line escaped `printf` inside the Dockerfile `CMD`. Easier to maintain and review. Content is unchanged apart from the `CLAUDE.user.md` import added at the end — and the stray backslashes are gone: the printf's quoting wrote a literal `\` before every backtick into the generated file
+
 ## [1.2.68] - 2026-11-01
 
 ### Changed

@@ -121,6 +121,10 @@ With `enable_remote_control`, sessions can be driven from `claude.ai/code` or th
 | `/ssl` | SSL certificates | read-only |
 | `/backup` | Backups | read-only |
 
+## Customizing Claude's Instructions
+
+The add-on regenerates `~/.claude/CLAUDE.md` (Claude Code's persistent instructions file) on every start, so don't edit it directly. Put your own instructions in `/homeassistant/.claudecode/CLAUDE.user.md` instead: the add-on creates it empty, never modifies it, and `CLAUDE.md` imports it — so anything you write there loads into every Claude Code session and survives restarts and add-on updates.
+
 ## Session Persistence
 
 When `session_persistence` is enabled, the add-on uses tmux to maintain your terminal session. This means:
