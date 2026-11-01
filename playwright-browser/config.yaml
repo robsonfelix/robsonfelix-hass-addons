@@ -6,10 +6,8 @@ url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
   - amd64
   - aarch64
-startup: application
 boot: manual
 init: false
-ingress: false
 panel_icon: mdi:google-chrome
 panel_title: Playwright Browser
 options:

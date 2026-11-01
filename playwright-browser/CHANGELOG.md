@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Upgraded the base image to `mcr.microsoft.com/playwright:v1.64.1-noble` (from `v1.57.0-noble`). The add-on was seven minor Playwright releases behind, while the Claude Code add-on installs `@playwright/mcp` unpinned and therefore tracks the newest client — currently one built against `playwright 1.65.0-alpha`. Client and browser are released together and expect to match, so the gap was widening silently with every rebuild
 
 ### Fixed
+- Removed `startup: application` and `ingress: false` from `config.yaml`; both restated the Supervisor's defaults. Flagged by the add-on linter, which now covers every add-on in the repository
 - `README.md` quoted `v1.50.0-noble` as the base image, two upgrades out of date. The version number is gone from the README entirely: it points at the Dockerfile instead, which is the only place that cannot go stale
 - Documented the version coupling between this add-on's browser and the `@playwright/mcp` client the Claude Code add-on installs, including what a mismatch looks like
 

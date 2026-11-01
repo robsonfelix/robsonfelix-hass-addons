@@ -8,6 +8,17 @@ ARG BUILD_FROM
 # keeps the pinned corepack working across npm signing-key rotations;
 # integrity comes from the yarn.lock checksums. Drop this stage and the
 # --index flag once a ttyd release newer than 1.7.7 ships.
+#
+# KNOWN FLAKE, CI ONLY: under QEMU aarch64 emulation this stage has died with
+# SIGILL (exit 132) on one run and passed on the next with identical input -
+# Node's JIT and QEMU's TCG do not get along. It does not affect users: the
+# Supervisor builds the add-on natively on their own hardware, with no
+# emulation. Re-run the CI job when it happens.
+#
+# Do NOT "fix" this with FROM --platform=$BUILDPLATFORM. That variable only
+# exists under BuildKit; the Supervisor's classic builder leaves it empty and
+# the build dies on this very line with "failed to parse platform". Verified
+# 2026-11-01.
 FROM ${BUILD_FROM} AS ttyd-client
 RUN apk add --no-cache curl nodejs npm
 ARG TTYD_CLIENT_COMMIT=2922cb89f518bae4d0fcf4d757a7419638fc71fc

@@ -6,10 +6,7 @@ url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
   - amd64
   - aarch64
-startup: application
-boot: auto
 init: false
-ingress: false
 panel_icon: mdi:camera-account
 panel_title: Auto-Monocle
 homeassistant_api: true
