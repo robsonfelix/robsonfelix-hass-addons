@@ -1,0 +1,6 @@
+#!/bin/bash
+# Auto-launch wrapper: run claude with the runtime flags assembled at startup,
+# then fall back to a login shell on exit so users can keep working.
+source /root/.bashrc 2>/dev/null
+claude $AUTO_LAUNCH_ARGS
+exec bash --login

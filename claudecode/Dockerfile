@@ -157,6 +157,8 @@ COPY CLAUDE.addon.md /usr/share/claudecode/CLAUDE.addon.md
 # COPY works on every builder and needs no syntax image.
 COPY rootfs/root/.tmux.conf /root/.tmux.conf
 COPY rootfs/root/.bashrc /root/.bashrc
+COPY rootfs/usr/local/bin/claude-auto-launch /usr/local/bin/claude-auto-launch
+RUN chmod +x /usr/local/bin/claude-auto-launch
 
 # Playwright MCP launcher: resolves the Playwright Browser hostname each time
 # the MCP server starts (see the script for why this can't happen at boot).
@@ -255,7 +257,7 @@ CMD ["/bin/bash", "-c", "\
     CLAUDE_OK=true; \
   else \
     CLAUDE_OK=false; \
-    echo '[ERROR] claude CLI did not respond within 30s - skipping MCP setup'; \
+    echo '[ERROR] claude CLI did not respond within 30s - skipping MCP setup and auto-launch'; \
     echo '[ERROR] The terminal will still start so you can debug from inside the add-on'; \
   fi && \
   if [ \"$CLAUDE_OK\" = \"true\" ]; then \
@@ -299,10 +301,29 @@ CMD ["/bin/bash", "-c", "\
   else \
     COLORS='{\"background\":\"#eff1f5\",\"foreground\":\"#4c4f69\",\"cursor\":\"#dc8a78\"}'; \
   fi && \
+  AUTO_LAUNCH=$(jq -r '.auto_launch_claude // \"off\"' /data/options.json) && \
+  if [ \"$CLAUDE_OK\" != \"true\" ]; then AUTO_LAUNCH=off; fi && \
+  CLAUDE_FLAGS=\"\" && \
+  if [ \"$REMOTE_CONTROL\" = \"true\" ]; then CLAUDE_FLAGS=\"--remote-control\"; fi && \
+  case \"$AUTO_LAUNCH\" in \
+    continue) AUTO_LAUNCH_ARGS=\"--continue $CLAUDE_FLAGS\" ;; \
+    new) AUTO_LAUNCH_ARGS=\"$CLAUDE_FLAGS\" ;; \
+    *) AUTO_LAUNCH_ARGS=\"\" ;; \
+  esac && \
+  export CLAUDE_FLAGS AUTO_LAUNCH_ARGS && \
+  echo \"[INFO] Auto-launch: $AUTO_LAUNCH\" && \
   if [ \"$SESSION_PERSIST\" = \"true\" ]; then \
-    SHELL_CMD='tmux new-session -A -s claude'; \
+    if [ \"$AUTO_LAUNCH\" != \"off\" ]; then \
+      SHELL_CMD='tmux new-session -A -s claude /usr/local/bin/claude-auto-launch'; \
+    else \
+      SHELL_CMD='tmux new-session -A -s claude'; \
+    fi; \
   else \
-    SHELL_CMD='bash --login'; \
+    if [ \"$AUTO_LAUNCH\" != \"off\" ]; then \
+      SHELL_CMD='/usr/local/bin/claude-auto-launch'; \
+    else \
+      SHELL_CMD='bash --login'; \
+    fi; \
   fi && \
   if [ \"$REMOTE_CONTROL\" = \"true\" ]; then export CLAUDE_REMOTE_CONTROL_SESSION_NAME_PREFIX=\"$RC_SESSION_PREFIX\"; fi && \
   cd /homeassistant && \

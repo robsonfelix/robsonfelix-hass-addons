@@ -2,8 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.2.71] - 2026-11-01
+## [1.2.72] - 2026-11-01
 
+
+### Added
+- `auto_launch_claude` option: start Claude Code automatically when the web terminal opens — `off` (plain shell, the default and previous behavior), `new` (fresh session), or `continue` (resume the most recent session via `claude --continue`). When Claude Code exits, the wrapper drops into a login shell so the terminal stays usable. Auto-launch is skipped (with the existing health-gate warning) when the `claude` CLI is not responding, and picks up `--remote-control` automatically when `enable_remote_control` is on — as do the `c`/`cc` aliases
+
+## [1.2.71] - 2026-11-01
 
 ### Added
 - `extra_npm_packages` option: list of npm package specs to install on every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). The bin directory is on `PATH`. Use it to add custom MCP servers without forking the Dockerfile; a failed install logs a `[WARN]` but never blocks startup

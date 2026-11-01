@@ -102,6 +102,7 @@ claude --continue
 | `working_directory` | Start directory | /homeassistant |
 | `session_persistence` | Use tmux for persistent sessions | true |
 | `auto_update_claude` | Auto-update Claude Code on startup (rolls back automatically if the new release cannot run) | true |
+| `auto_launch_claude` | Start Claude Code automatically when the terminal opens: `off` (plain shell), `new` (fresh session), or `continue` (resume the last session). Exiting Claude drops you into a shell | off |
 | `enable_remote_control` | View and steer the session from claude.ai/code or the Claude mobile app. See the security note below | false |
 | `remote_control_session_prefix` | Prefix for auto-generated Remote Control session names | HomeAssistant |
 | `extra_npm_packages` | List of npm package specs to install at every container start under `/homeassistant/.claudecode/npm-global` (persistent across add-on rebuilds). Bin dir is on `PATH`. Use to add custom MCP servers without forking the Dockerfile. | `[]` |

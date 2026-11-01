@@ -9,7 +9,7 @@ PS1='\[\033[1;36m\]claude-code\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ '
 
 # Aliases
 alias ll='ls -la'
-alias c='claude'
-alias cc='claude --continue'
+alias c='claude $CLAUDE_FLAGS'
+alias cc='claude --continue $CLAUDE_FLAGS'
 alias ha-config='cd /homeassistant'
 alias ha-logs='cat /homeassistant/home-assistant.log 2>/dev/null || echo "Log not found"'

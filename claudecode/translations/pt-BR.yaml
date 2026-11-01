@@ -44,6 +44,13 @@ configuration:
     description: >-
       Verifica e instala automaticamente atualizações do Claude Code ao iniciar o add-on.
       Mantém o Claude Code atualizado sem precisar atualizar a versão do add-on.
+  auto_launch_claude:
+    name: Início Automático do Claude Code
+    description: >-
+      Inicia o Claude Code automaticamente quando o terminal web é aberto. "off"
+      abre um shell comum (padrão), "new" inicia uma nova sessão do Claude Code,
+      "continue" retoma a sessão mais recente (claude --continue). Ao sair do
+      Claude Code você fica em um shell normal.
   enable_remote_control:
     name: Habilitar Controle Remoto
     description: >-
