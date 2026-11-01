@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.76] - 2026-11-01
+
+### Changed
+- Removed four redundant keys from `config.yaml`, flagged by the add-on linter that landed with CI in this release. `startup: application`, `boot: auto` and `init: true` all restated the Supervisor's own defaults, and `uart: true` is implied by `full_access: true`. No behaviour change — the effective configuration is identical
+
 ## [1.2.75] - 2026-11-01
 
 ### Added
