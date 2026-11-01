@@ -1,7 +1,7 @@
 name: Lint
 
-# Roda em todo PR e push na main. Rapido de proposito (~1 min): a ideia e dar
-# sinal antes de alguem gastar tempo com build multi-arquitetura.
+# Runs on every PR and push to main. Deliberately fast (~1 min): the point is
+# to give a signal before anyone spends time on a multi-architecture build.
 on:
   pull_request:
   push:
@@ -32,9 +32,9 @@ jobs:
       - name: Install PyYAML
         run: pip install --quiet pyyaml
 
-      # Checagem propria: options x schema x traducoes. Existe porque um PR
-      # entrou com tres opcoes traduzidas so para ingles e o fr.yaml estava
-      # sem quatro chaves ha meses -- a opcao aparecia sem nome na interface.
+      # Custom check: options x schema x translations. It exists because a PR
+      # shipped three options translated for English only, and fr.yaml had been
+      # missing four keys for months - the options rendered unnamed in the UI.
       - name: Check options, schema and translations
         run: python3 .github/scripts/check-addon-options.py claudecode playwright-browser auto-monocle
 
@@ -50,7 +50,8 @@ jobs:
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           dockerfile: ${{ matrix.addon }}/Dockerfile
-          # DL3018: apk sem versao fixa. O add-on segue o Alpine da imagem base
-          # do Home Assistant de proposito; fixar versao quebraria o bump dela.
+          # DL3018: apk without a pinned version. The add-on deliberately
+          # follows the Alpine of the Home Assistant base image; pinning here
+          # would break bumping that.
           ignore: DL3018
           failure-threshold: error

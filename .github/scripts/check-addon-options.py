@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Checa consistencia entre options, schema e as traducoes de um add-on.
+"""Check that an add-on's options, schema and translations agree.
 
-Existe por causa de um caso real: o PR #47 adicionou tres opcoes traduzidas so
-para ingles, e o fr.yaml estava sem quatro chaves de remote control desde a
-1.2.65. Nada no repositorio pegava isso -- a opcao simplesmente aparecia sem
-nome na interface do Home Assistant, no idioma do usuario.
+This exists because of a real case: PR #47 added three options translated for
+English only, and fr.yaml had been missing four remote-control keys since
+1.2.65. Nothing in the repository caught it -- the option simply rendered
+without a name in the Home Assistant UI, in the user's language.
 
     python3 .github/scripts/check-addon-options.py claudecode
 """
@@ -13,12 +13,12 @@ from pathlib import Path
 
 import yaml
 
-falhou = False
+failed = False
 
 
-def erro(msg):
-    global falhou
-    falhou = True
+def error(msg):
+    global failed
+    failed = True
     print(f"::error::{msg}")
 
 
@@ -28,34 +28,34 @@ for addon in sys.argv[1:]:
     options = set(cfg.get("options") or {})
     schema = set(cfg.get("schema") or {})
 
-    # toda opcao precisa de schema, e vice-versa
+    # every option needs a schema entry, and vice versa
     for k in sorted(options - schema):
-        erro(f"{addon}: '{k}' esta em options mas nao em schema")
+        error(f"{addon}: '{k}' is in options but not in schema")
     for k in sorted(schema - options):
-        # opcional no schema (sufixo ?) pode nao ter default
+        # optional in the schema (? suffix) may have no default
         tipo = str((cfg.get("schema") or {}).get(k, ""))
         if not tipo.endswith("?"):
-            erro(f"{addon}: '{k}' esta em schema mas nao tem default em options")
+            error(f"{addon}: '{k}' is in schema but has no default in options")
 
     traducoes = sorted((base / "translations").glob("*.yaml"))
     if not traducoes:
-        erro(f"{addon}: nenhuma traducao encontrada")
+        error(f"{addon}: no translations found")
     for t in traducoes:
         dados = yaml.safe_load(t.read_text(encoding="utf-8")) or {}
         chaves = set((dados.get("configuration") or {}))
         faltando = sorted(schema - chaves)
         sobrando = sorted(chaves - schema)
         for k in faltando:
-            erro(f"{addon}/{t.name}: falta traducao para '{k}'")
+            error(f"{addon}/{t.name}: missing translation for '{k}'")
         for k in sobrando:
-            erro(f"{addon}/{t.name}: '{k}' traduzida mas nao existe no schema")
+            error(f"{addon}/{t.name}: '{k}' translated but absent from schema")
         if not faltando and not sobrando:
-            print(f"  {addon}/{t.name}: {len(chaves)}/{len(schema)} opcoes OK")
+            print(f"  {addon}/{t.name}: {len(chaves)}/{len(schema)} options OK")
 
-    # a versao do config precisa ter entrada no changelog
+    # the config version needs a changelog entry
     versao = str(cfg.get("version", ""))
     ch = (base / "CHANGELOG.md")
     if ch.exists() and f"[{versao}]" not in ch.read_text(encoding="utf-8"):
-        erro(f"{addon}: versao {versao} nao tem entrada em CHANGELOG.md")
+        error(f"{addon}: version {versao} has no CHANGELOG.md entry")
 
-sys.exit(1 if falhou else 0)
+sys.exit(1 if failed else 0)

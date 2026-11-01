@@ -1,10 +1,10 @@
-# Mantem atualizado o que e pinado neste repositorio.
+# Keeps the things this repository pins up to date.
 #
-# Existe porque pin imutavel resolve um problema e cria outro: o
-# home-assistant/builder esta fixado num SHA e, sem isto, ficaria em
-# 2026.03.2 para sempre. E porque a imagem do playwright-browser derivou sete
-# versoes menores (1.50 -> 1.57 enquanto o estavel chegava a 1.64) sem que
-# nada avisasse, ate alguem reparar na mao.
+# It exists because an immutable pin solves one problem and creates another:
+# home-assistant/builder is fixed at a SHA and, without this, would sit at
+# 2026.03.2 forever. And because the playwright-browser base image drifted
+# seven minor versions (1.50 -> 1.57 while stable reached 1.64) with nothing
+# flagging it, until someone noticed by hand.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -15,8 +15,8 @@ updates:
       prefix: ci
     labels: [dependencies]
 
-  # Unico Dockerfile com imagem base concreta. Os outros usam ${BUILD_FROM},
-  # que o Dependabot nao resolve -- ver a limitacao abaixo.
+  # The only Dockerfile with a concrete base image. The others use
+  # ${BUILD_FROM}, which Dependabot does not resolve - see the limits below.
   - package-ecosystem: docker
     directory: "/playwright-browser"
     schedule:
@@ -25,16 +25,16 @@ updates:
       prefix: build
     labels: [dependencies]
 
-# O QUE ISTO NAO COBRE, e continua sendo manual:
+# WHAT THIS DOES NOT COVER, and stays manual:
 #
-#   claudecode/build.yaml e auto-monocle/build.yaml
-#     As imagens base reais (ghcr.io/home-assistant/*-base-python:3.13-alpine*)
-#     ficam ai, nao no Dockerfile. Dependabot nao le build.yaml.
+#   claudecode/build.yaml and auto-monocle/build.yaml
+#     The real base images (ghcr.io/home-assistant/*-base-python:3.13-alpine*)
+#     live there, not in the Dockerfile. Dependabot does not read build.yaml.
 #
 #   claudecode/Dockerfile
-#     TTYD_CLIENT_COMMIT  commit fixo do fonte do ttyd
-#     ttyd 1.7.7          versao do binario, na URL de download
-#     corepack@0.35.0     fixado dentro de um RUN
+#     TTYD_CLIENT_COMMIT  pinned commit of the ttyd source
+#     ttyd 1.7.7          binary version, in the download URL
+#     corepack@0.35.0     pinned inside a RUN step
 #
 #   claudecode: @playwright/mcp
-#     Instalado sem pin de proposito; ver a nota de acoplamento no README.
+#     Deliberately unpinned; see the coupling note in the README.

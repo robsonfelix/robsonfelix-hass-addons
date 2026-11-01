@@ -1,25 +1,26 @@
 name: Build
 
-# Em PR: constroi sem publicar, pegando erro de build cedo.
-# Em tag v*: constroi e publica em ghcr.io.
+# On a PR: builds without publishing, catching build errors early.
+# On a v* tag: builds and publishes to ghcr.io.
 #
-# Motivo de existir: ate 11/2026 nada construia o add-on automaticamente. Onze
-# PRs ficaram tres meses em conflito sem ninguem saber, e a issue #54 (gate de
-# AVX quebrado em ARM) chegou a producao porque nenhuma arquitetura alem de
-# amd64 era testavel por quem revisava.
+# Why this exists: until 11/2026 nothing built the add-on automatically. Eleven
+# PRs sat conflicting for three months without anyone knowing, and issue #54
+# (the AVX gate broken on ARM) reached production because no architecture other
+# than amd64 was testable by whoever reviewed.
 on:
   pull_request:
   push:
     branches: [main]
-    # Monorepo: a tag diz QUAL add-on lancar. 'claudecode/v1.2.76',
-    # 'playwright-browser/v0.1.13'. O formato antigo 'v1.2.x' era da
-    # claudecode por convencao implicita e continua aceito.
+    # Monorepo: the tag says WHICH add-on to release. 'claudecode/v1.2.76',
+    # 'playwright-browser/v0.1.13'. The older 'v1.2.x' form meant claudecode by
+    # implicit convention and is still accepted.
     tags: ['*/v*', 'v*']
 
 jobs:
-  # Descobre qual add-on construir. Numa tag vem do proprio nome dela; fora de
-  # tag so a claudecode e construida, porque e a que muda e porque a imagem
-  # base do playwright-browser tem ~2GB e nao vale baixar em todo PR.
+  # Works out which add-on to build. On a tag it comes from the tag name;
+  # otherwise only claudecode is built, because it is the one that changes and
+  # because playwright-browser's base image is ~2GB, not worth pulling on
+  # every PR.
   target:
     runs-on: ubuntu-latest
     outputs:
@@ -45,8 +46,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # armv7, armhf e i386 foram removidos em 1.2.76: sem suporte no
-        # Home Assistant desde 2025.12. Sobram as duas arquiteturas reais.
+        # armv7, armhf and i386 were dropped in 1.2.76: unsupported by Home
+        # Assistant since 2025.12. These two are what is left.
         arch: [amd64, aarch64]
     steps:
       - uses: actions/checkout@v4
@@ -59,22 +60,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # --test constroi sem publicar. Nas tags ele sai e a imagem vai para o
-      # ghcr, para o usuario baixar em vez de compilar na propria maquina --
-      # o que hoje faz cada instalacao rodar o estagio de build do ttyd.
-      # ARMADILHA, verificada 2026-11-01: esta action usa o PROPRIO ref do
-      # `uses:` como tag da imagem Docker do builder --
+      # TRAP, verified 2026-11-01: this action uses the ref from its own
+      # `uses:` line as the tag of the builder Docker image it pulls --
       #   docker pull ghcr.io/home-assistant/${arch}-builder:${ref}
-      # Entao so da para pinar num ref que TENHA imagem publicada. Pinar numa
-      # release qualquer quebra: 2026.09.0 e 2026.06.0 nao tem imagem, e o
-      # build morre com "not found" antes de comecar.
+      # So a ref is only pinnable if an image was published for it. Pinning to
+      # an arbitrary release breaks: 2026.09.0 and 2026.06.0 have no image and
+      # the build dies with "not found" before it starts.
       #
-      # Checado no ghcr: das releases recentes, so 2026.03.2 tem imagem, nas
-      # duas arquiteturas. O @master anterior caia no fallback interno da
-      # action para a imagem 2026.02.1 -- ou seja, este pin tambem ATUALIZA o
-      # builder, alem de torna-lo imutavel.
+      # Checked against ghcr: of the recent releases only 2026.03.2 has images,
+      # for both architectures. The previous @master fell back internally to
+      # the 2026.02.1 image, so this pin also UPGRADES the builder as well as
+      # making it immutable.
       #
-      # Antes de trocar este SHA, confirme que a imagem existe:
+      # Before changing this SHA, confirm the image exists:
       #   ghcr.io/home-assistant/amd64-builder:<sha>
       #   ghcr.io/home-assistant/aarch64-builder:<sha>
       - name: Build add-on
