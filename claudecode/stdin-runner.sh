@@ -17,16 +17,18 @@
 # claudecode_run_started / claudecode_run_finished (the latter carries
 # aborted: true when the run was killed by an abort message).
 
-OPTS=/data/options.json
+# Paths and the Supervisor address can be overridden for tests; the defaults are the add-on's.
+OPTS=${STDIN_RUNNER_OPTIONS:-/data/options.json}
+SUPERVISOR_URL=${STDIN_RUNNER_SUPERVISOR_URL:-http://supervisor}
 DEFAULT_MODEL=$(jq -r '.default_task_model // ""' "$OPTS")
 DEFAULT_TOOLS=$(jq -c '.default_task_allowed_tools // []' "$OPTS")
 MAX_MINUTES=$(jq -r '.task_max_runtime_minutes // 30' "$OPTS")
 
-LOG_DIR=/config/task-logs
+LOG_DIR=${STDIN_RUNNER_LOG_DIR:-/config/task-logs}
 mkdir -p "$LOG_DIR" 2>/dev/null || LOG_DIR=/homeassistant/.claudecode/task-logs
 mkdir -p "$LOG_DIR"
 
-RUN_DIR=/tmp/claudecode-task
+RUN_DIR=${STDIN_RUNNER_RUN_DIR:-/tmp/claudecode-task}
 mkdir -p "$RUN_DIR"
 
 fire_event() {
@@ -35,7 +37,7 @@ fire_event() {
         -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
         -H "Content-Type: application/json" \
         -d "$payload" \
-        "http://supervisor/core/api/events/${event}" > /dev/null
+        "${SUPERVISOR_URL}/core/api/events/${event}" > /dev/null
 }
 
 run_active() {

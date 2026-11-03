@@ -1,0 +1,32 @@
+# The test-suite (`make test`, see the Makefile) on every pull request and on main.
+# Python 3.13 as in the add-on's base image (build.yaml: base-python:3.13-alpine3.21); tmux for the
+# claude-login-url tests. Read-only: nothing here can push, comment or publish. A pull request from a fork may wait for a maintainer's
+# approval before its first run (GitHub's default for outside contributors).
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Tools the tests call
+        run: sudo apt-get update -q && sudo apt-get install -y -q tmux
+      - name: make test
+        run: make test
