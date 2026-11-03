@@ -6,6 +6,15 @@ url: https://github.com/robsonfelix/robsonfelix-hass-addons
 arch:
   - amd64
   - aarch64
+# Share the host's UTS namespace so the container's hostname is the Home
+# Assistant host's (e.g. "homeassistant") rather than the add-on slug
+# ("d7e97e69-claudecode"): Claude Code reports the machine's hostname to
+# claude.ai for Remote Control, and `hostname` in the terminal matches the box.
+# Nothing the add-on runs reads the container hostname (the Playwright launcher
+# derives its target from the add-on slug). The AppArmor profile grants no
+# sys_admin, so sethostname() stays impossible and the host's name cannot be
+# changed from here.
+host_uts: true
 stdin: true
 ingress: true
 ingress_port: 7681

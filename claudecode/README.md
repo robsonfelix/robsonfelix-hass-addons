@@ -66,6 +66,14 @@ With hass-mcp enabled, Claude can:
 - List services: "What services are available for climate control?"
 - Debug automations: "Why didn't my morning routine trigger?"
 
+`ha-ws` (in the terminal) sends commands to Home Assistant's WebSocket API, for the
+changes the REST API cannot make and that must not be made by editing `.storage/`
+while HA runs (HA rewrites those files from memory on shutdown): entity, device and
+area registry updates, `lovelace/config/save`, `energy/save_prefs`, recorder
+statistics. One command, a JSON file of commands, or `-` for stdin; one JSON reply per
+line; `--keep-going` carries on after a failed command. For example:
+`ha-ws '{"type": "config/entity_registry/update", "entity_id": "light.a", "new_entity_id": "light.b"}'`.
+
 ### Example Commands
 
 ```bash
@@ -184,7 +192,7 @@ Then: `action: script.claude_agent` with `prompt:` / `run_id:` data.
 
 With `enable_remote_control`, sessions can be driven from `claude.ai/code` or the Claude mobile app (requires a Pro, Max, Team, or Enterprise subscription; API keys are not supported).
 
-`enable_remote_control` on its own applies to sessions you start in the web terminal, so nothing is reachable until you open it and run `claude`. Turn on `remote_control_server` as well to run `claude remote-control` in the background as soon as the add-on boots. It shows up in claude.ai/code and the mobile app, where you can start new sessions that run in `/homeassistant`. It runs in its own tmux session (`tmux attach -t rc` to view it) and restarts automatically if it exits. `remote_control_permission_mode` sets the permission mode for those sessions.
+`enable_remote_control` on its own applies to sessions you start in the web terminal, so nothing is reachable until you open it and run `claude`. Turn on `remote_control_server` as well to run `claude remote-control` in the background as soon as the add-on boots. It shows up in claude.ai/code and the mobile app, where you can start new sessions that run in `/homeassistant`. It runs in its own tmux session (`tmux attach -t rc` to view it) and restarts automatically if it exits. `remote_control_permission_mode` sets the permission mode for those sessions. The machine appears under your Home Assistant host's name (for example `homeassistant`), not the add-on's container name, because the add-on shares the host's hostname (`host_uts`).
 
 **Security note:** this add-on runs as root with full access to your Home Assistant host. Anyone who can sign in to the linked Claude account can control it, and with `remote_control_server` on they can start new sessions on it at any time. Leave this off unless you need it.
 

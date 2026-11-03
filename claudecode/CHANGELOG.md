@@ -11,6 +11,26 @@ All notable changes to this project will be documented in this file.
   parsed the way Docker reads it. `stdin-runner.sh` takes `STDIN_RUNNER_*`
   overrides for its paths and the Supervisor address so the tests can point it
   at a scratch directory; the defaults are unchanged
+- `ha-ws`: a stdlib-only client for Home Assistant's WebSocket API, for the
+  calls the REST API lacks and that must not be made by editing `.storage/`
+  while HA runs (`ha-ws '{"type": "config/entity_registry/update", ...}'`, a
+  JSON file, or `-` for stdin; one reply per line). Stops at the first failed
+  command (`--keep-going` runs the rest); exit 1 = a command failed, 2 =
+  usage/connection/auth error, reported in one line. Keeps bytes that arrive
+  together with the handshake (HA's greeting can share a read with the HTTP 101
+  through the Supervisor proxy); `--timeout` is a deadline per command (default
+  300 s) that heartbeat pings and events do not extend. With a test against a
+  fake WebSocket server, and the AppArmor line Python's C extensions need
+  (`/usr/local/lib/python3*/** mr`)
+
+### Changed
+- The container reports the Home Assistant host's hostname: `host_uts: true`
+  shares the host's UTS namespace, so `hostname` inside the add-on, and the
+  machine name Claude Code reports to claude.ai for Remote Control, is the HA
+  host's name (e.g. `homeassistant`) instead of the add-on slug
+  (`d7e97e69-claudecode`). Nothing the add-on runs depends on the container
+  hostname; the AppArmor profile grants no `sys_admin`, so the host's name
+  cannot be changed from inside
 
 ## [1.2.76] - 2026-11-01
 

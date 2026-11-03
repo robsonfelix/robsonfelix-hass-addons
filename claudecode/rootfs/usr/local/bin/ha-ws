@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""Send commands to Home Assistant's WebSocket API (stdlib only, no pip deps).
+
+Usage:
+  ha-ws '{"type": "config/entity_registry/update", "entity_id": "light.a", "new_entity_id": "light.b"}'
+  ha-ws commands.json          # a JSON list of command objects
+  echo '[{...}, {...}]' | ha-ws -
+
+Options:
+  --keep-going      run the remaining commands after one fails (default: stop there)
+  --timeout SECS    how long to wait for each command's reply (default 300)
+
+Each command is a message object without "id" (ids are assigned in order). Prints one
+JSON reply per command, one per line. Exit 0 = every command succeeded, 1 = a command
+failed (by default the commands after it are not sent), 2 = usage, connection or
+authentication error.
+
+Use it for what the REST API cannot do and what must not be done by editing .storage/
+while HA runs (HA rewrites those files from memory on shutdown): entity/device/area
+registry updates, lovelace/config/save, energy/save_prefs, recorder statistics queries.
+Talks to the Supervisor proxy with $SUPERVISOR_TOKEN.
+"""
+import base64
+import json
+import os
+import socket
+import struct
+import sys
+import time
+
+HOST = "supervisor"
+PORT = 80
+PATH = "/core/websocket"
+CONNECT_TIMEOUT = 30
+
+
+class Fail(Exception):
+    """A usage, connection or authentication error: reported in one line, exit 2."""
+
+
+class Conn:
+    def __init__(self):
+        try:
+            self.s = socket.create_connection((HOST, PORT), timeout=CONNECT_TIMEOUT)
+        except OSError as e:
+            raise Fail(f"cannot connect to {HOST}:{PORT}: {e}")
+        # Bytes that arrived after the handshake. HA's auth_required frame can come in the
+        # same read as the HTTP 101 response; dropping them leaves the client waiting for
+        # a greeting that has already been sent.
+        self.buf = b""
+        self.deadline = None  # time.monotonic() value by which the current reply is due
+        key = base64.b64encode(os.urandom(16)).decode()
+        self.s.sendall((
+            f"GET {PATH} HTTP/1.1\r\n"
+            f"Host: {HOST}\r\n"
+            "Upgrade: websocket\r\n"
+            "Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            "Sec-WebSocket-Version: 13\r\n\r\n"
+        ).encode())
+        resp = b""
+        while b"\r\n\r\n" not in resp:
+            chunk = self.s.recv(4096)
+            if not chunk:
+                raise Fail("handshake failed: connection closed")
+            resp += chunk
+        head, self.buf = resp.split(b"\r\n\r\n", 1)
+        status = head.split(b"\r\n", 1)[0].decode(errors="replace")
+        if " 101 " not in status + " ":
+            raise Fail(f"handshake failed: {status}")
+
+    def send(self, payload: bytes, opcode=0x1):
+        mask = os.urandom(4)
+        header = bytes([0x80 | opcode])  # FIN + opcode (text by default)
+        n = len(payload)
+        if n < 126:
+            header += bytes([0x80 | n])
+        elif n < 65536:
+            header += bytes([0x80 | 126]) + struct.pack(">H", n)
+        else:
+            header += bytes([0x80 | 127]) + struct.pack(">Q", n)
+        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        self.s.sendall(header + mask + masked)
+
+    def recv_exact(self, n):
+        while len(self.buf) < n:
+            if self.deadline is not None:
+                # A deadline, not an idle timeout: HA's heartbeat pings and subscription
+                # events would otherwise restart the clock on every frame.
+                left = self.deadline - time.monotonic()
+                if left <= 0:
+                    raise socket.timeout()
+                self.s.settimeout(left)
+            chunk = self.s.recv(max(65536, n - len(self.buf)))
+            if not chunk:
+                raise Fail("connection closed by Home Assistant")
+            self.buf += chunk
+        out, self.buf = self.buf[:n], self.buf[n:]
+        return out
+
+    def recv(self):
+        """One complete message (reassembles continuation frames, answers pings)."""
+        parts = []
+        while True:
+            b1, b2 = self.recv_exact(2)
+            fin, opcode = b1 & 0x80, b1 & 0x0F
+            n = b2 & 0x7F
+            if n == 126:
+                n = struct.unpack(">H", self.recv_exact(2))[0]
+            elif n == 127:
+                n = struct.unpack(">Q", self.recv_exact(8))[0]
+            payload = self.recv_exact(n) if n else b""
+            if opcode == 0x9:  # ping -> pong; it must be a pong frame: HA drops the
+                self.send(payload, 0xA)  # connection ("invalid JSON") if it arrives as text
+                continue
+            if opcode == 0xA:
+                continue
+            if opcode == 0x8:
+                raise Fail("connection closed by Home Assistant")
+            parts.append(payload)
+            if fin:
+                return json.loads(b"".join(parts).decode())
+
+
+def load_commands(arg):
+    try:
+        if arg == "-":
+            data = json.load(sys.stdin)
+        elif arg.lstrip().startswith(("{", "[")):
+            data = json.loads(arg)
+        else:
+            with open(arg) as f:
+                data = json.load(f)
+    except OSError as e:
+        raise Fail(f"cannot read {arg}: {e.strerror}")
+    except ValueError as e:
+        raise Fail(f"commands are not valid JSON: {e}")
+    cmds = data if isinstance(data, list) else [data]
+    for i, cmd in enumerate(cmds, start=1):
+        if not isinstance(cmd, dict) or not isinstance(cmd.get("type"), str):
+            raise Fail(f"command {i} is not an object with a \"type\": {json.dumps(cmd)[:200]}")
+    return cmds
+
+
+def run(argv):
+    keep_going, timeout, args = False, 300.0, []
+    it = iter(argv)
+    for a in it:
+        if a in ("-h", "--help"):
+            print(__doc__.strip())
+            return 0
+        if a == "--keep-going":
+            keep_going = True
+        elif a == "--timeout":
+            try:
+                timeout = float(next(it))
+            except (StopIteration, ValueError):
+                raise Fail("--timeout needs a number of seconds")
+        else:
+            args.append(a)
+    if len(args) != 1:
+        raise Fail("expected exactly one argument: a JSON command, a file, or - (see --help)")
+    cmds = load_commands(args[0])
+    token = os.environ.get("SUPERVISOR_TOKEN")
+    if not token:
+        raise Fail("SUPERVISOR_TOKEN is not set")
+    c = Conn()
+    msg = c.recv()
+    if msg.get("type") != "auth_required":
+        raise Fail(f"unexpected greeting: {msg}")
+    c.send(json.dumps({"type": "auth", "access_token": token}).encode())
+    msg = c.recv()
+    if msg.get("type") != "auth_ok":
+        raise Fail(f"authentication failed: {msg.get('message', msg.get('type'))}")
+    ok = True
+    for mid, cmd in enumerate(cmds, start=1):
+        c.deadline = time.monotonic() + timeout
+        c.send(json.dumps(dict(cmd, id=mid)).encode())
+        while True:
+            try:
+                resp = c.recv()
+            except socket.timeout:
+                raise Fail(f"no reply to command {mid} ({cmd['type']}) within {timeout:g} s")
+            # The reply is the first non-event message with our id: "result" for most
+            # commands, "pong" for ping. Subscriptions send events with the same id later.
+            if resp.get("id") == mid and resp.get("type") != "event":
+                print(json.dumps(resp), flush=True)
+                break
+        if resp.get("type") == "result" and not resp.get("success", False):
+            ok = False
+            if not keep_going and mid < len(cmds):
+                print(f"ha-ws: command {mid} ({cmd['type']}) failed; the remaining "
+                      f"{len(cmds) - mid} were not sent (--keep-going runs them)", file=sys.stderr)
+                break
+    c.s.close()
+    return 0 if ok else 1
+
+
+def main():
+    try:
+        sys.exit(run(sys.argv[1:]))
+    except Fail as e:
+        err = str(e)
+    except (OSError, ValueError) as e:  # socket errors and timeouts, a malformed frame
+        err = f"{type(e).__name__}: {e}"
+    except KeyboardInterrupt:
+        sys.exit(130)
+    print(f"ha-ws: {err}", file=sys.stderr)
+    sys.exit(2)
+
+
+if __name__ == "__main__":
+    main()
