@@ -1,0 +1,2 @@
+# Third-party packages the test-suite needs. None yet: the modules use the standard
+# library only. `make deps` installs from here when something is added.

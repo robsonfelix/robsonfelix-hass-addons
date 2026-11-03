@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- A test-suite (`make test`, `.github/workflows/tests.yml`): `claude-login-url`
+  against a real tmux, `stdin-runner.sh` through a pipe with a fake `claude` and
+  a fake Supervisor, `bash -n` on every shell script, and the Dockerfile's CMD
+  parsed the way Docker reads it. `stdin-runner.sh` takes `STDIN_RUNNER_*`
+  overrides for its paths and the Supervisor address so the tests can point it
+  at a scratch directory; the defaults are unchanged
+
 ## [1.2.76] - 2026-11-01
 
 ### Fixed

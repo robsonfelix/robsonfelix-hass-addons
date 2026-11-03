@@ -16,3 +16,5 @@ node_modules/
 .env
 *.local
 .claude/
+__pycache__/
+*.pyc
