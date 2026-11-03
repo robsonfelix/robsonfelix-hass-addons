@@ -14,7 +14,9 @@ arch:
 # derives its target from the add-on slug). The AppArmor profile grants no
 # sys_admin, so a process in this container cannot call sethostname() (the
 # add-on's Docker socket and full_access reach the host anyway, as the README's
-# security note says).
+# security note says). Docker still writes the container id, not the host's
+# name, into /etc/hosts, so `homeassistant` keeps resolving through the
+# Supervisor's DNS to HA Core (checked on a live install, 2026-11-03).
 host_uts: true
 stdin: true
 ingress: true
