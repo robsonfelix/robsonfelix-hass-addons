@@ -12,8 +12,9 @@ arch:
 # claude.ai for Remote Control, and `hostname` in the terminal matches the box.
 # Nothing the add-on runs reads the container hostname (the Playwright launcher
 # derives its target from the add-on slug). The AppArmor profile grants no
-# sys_admin, so sethostname() stays impossible and the host's name cannot be
-# changed from here.
+# sys_admin, so a process in this container cannot call sethostname() (the
+# add-on's Docker socket and full_access reach the host anyway, as the README's
+# security note says).
 host_uts: true
 stdin: true
 ingress: true

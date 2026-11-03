@@ -9,7 +9,7 @@ import threading
 import time
 import unittest
 
-from testlib import BIN_DIR
+from testlib import BIN_DIR, SUPERVISOR_TOKEN, run_cli
 
 HA_WS = BIN_DIR / "ha-ws"
 
@@ -49,39 +49,51 @@ class TestHaWs(unittest.TestCase):
         threading.Thread(target=self.serve, daemon=True).start()
 
     def serve(self):
-        try:
-            c, _ = self.srv.accept()
-            self.addCleanup(c.close)
-            d = b""
-            while b"\r\n\r\n" not in d:
-                d += c.recv(4096)
-            # One write on purpose: 101 + auth_required arrive in the same read.
-            c.sendall(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n"
-                      b"Connection: Upgrade\r\n\r\n" + frame({"type": "auth_required"}))
-            read_msg(c)
-            c.sendall(frame({"type": "auth_ok"}))
-            while True:
-                m = read_msg(c)
-                self.seen.append(m["type"])
-                if m["type"] == "ping":
-                    c.sendall(frame({"id": m["id"], "type": "pong"}))
-                elif m["type"] == "slow":
-                    time.sleep(5)
-                elif m["type"] == "never":      # no reply, but heartbeat pings and events keep coming
-                    for _ in range(40):
-                        c.sendall(bytes([0x89, 0]) + frame({"id": 99, "type": "event"}))
-                        time.sleep(0.2)
-                else:
-                    c.sendall(frame({"id": m["id"], "type": "result", "success": m["type"] != "bad"}))
-        except (OSError, ConnectionError):
-            pass
+        # One connection at a time, for as long as the listening socket lives: a test may
+        # run ha-ws several times.
+        while True:
+            try:
+                c, _ = self.srv.accept()
+            except OSError:
+                return
+            try:
+                self.talk(c)
+            except (OSError, ConnectionError):
+                pass
+            finally:
+                c.close()
 
-    def run_ws(self, *args, token="x"):
-        src = HA_WS.read_text().replace('HOST = "supervisor"', 'HOST = "127.0.0.1"') \
-                               .replace("PORT = 80", f"PORT = {self.srv.getsockname()[1]}")
-        env = dict(os.environ, SUPERVISOR_TOKEN=token)
-        return subprocess.run([sys.executable, "-c", src, *args], capture_output=True, text=True,
-                              env=env, timeout=60)
+    def talk(self, c):
+        d = b""
+        while b"\r\n\r\n" not in d:
+            d += c.recv(4096)
+        # One write on purpose: 101 + auth_required arrive in the same read.
+        c.sendall(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\n"
+                  b"Connection: Upgrade\r\n\r\n" + frame({"type": "auth_required"}))
+        read_msg(c)
+        c.sendall(frame({"type": "auth_ok"}))
+        while True:
+            m = read_msg(c)
+            self.seen.append(m["type"])
+            if m["type"] == "ping":
+                c.sendall(frame({"id": m["id"], "type": "pong"}))
+            elif m["type"] == "slow":
+                time.sleep(5)
+            elif m["type"] == "never":      # no reply, but heartbeat pings and events keep coming
+                for _ in range(40):
+                    c.sendall(bytes([0x89, 0]) + frame({"id": 99, "type": "event"}))
+                    time.sleep(0.2)
+            elif m["type"] == "bye":        # server-side close with a code and reason
+                c.sendall(bytes([0x88, 2 + 10]) + (1009).to_bytes(2, "big") + b"too large!")
+                return
+            else:
+                c.sendall(frame({"id": m["id"], "type": "result", "success": m["type"] != "bad"}))
+
+    def run_ws(self, *args, token=SUPERVISOR_TOKEN):
+        env = dict(os.environ, SUPERVISOR_TOKEN=token, HA_WS_HOST="127.0.0.1",
+                   HA_WS_PORT=str(self.srv.getsockname()[1]))
+        rc, out, err = run_cli([sys.executable, HA_WS, *args], env, timeout=60)
+        return subprocess.CompletedProcess([str(HA_WS), *args], rc, out, err)
 
     def test_greeting_coalesced_with_handshake(self):
         r = self.run_ws('{"type": "get_config"}')
@@ -110,7 +122,10 @@ class TestHaWs(unittest.TestCase):
                            (("{nope",), "not valid JSON"),
                            (("/nonexistent.json",), "cannot read"),
                            (('[{"no_type": 1}]',), "not an object with a \"type\""),
-                           ((), "expected exactly one argument")):
+                           ((), "expected exactly one argument"),
+                           (("--timeout", "inf", '{"type": "a"}'), "positive, finite"),
+                           (("--timeout", "0", '{"type": "a"}'), "positive, finite"),
+                           (('{"type": "bye"}',), "closed by Home Assistant (code 1009: too large!)")):
             r = self.run_ws(*args)
             self.assertEqual(r.returncode, 2, args)
             self.assertIn(text, r.stderr)

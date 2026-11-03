@@ -19,9 +19,10 @@ All notable changes to this project will be documented in this file.
   usage/connection/auth error, reported in one line. Keeps bytes that arrive
   together with the handshake (HA's greeting can share a read with the HTTP 101
   through the Supervisor proxy); `--timeout` is a deadline per command (default
-  300 s) that heartbeat pings and events do not extend. With a test against a
-  fake WebSocket server, and the AppArmor line Python's C extensions need
-  (`/usr/local/lib/python3*/** mr`)
+  300 s) that heartbeat pings and events do not extend; a close frame is
+  reported with its code and reason. `HA_WS_HOST` / `HA_WS_PORT` overrides
+  for the test, which runs it against a fake WebSocket server. With the
+  AppArmor line Python's C extensions need (`/usr/local/lib/python3*/** mr`)
 
 ### Changed
 - The container reports the Home Assistant host's hostname: `host_uts: true`
@@ -29,8 +30,8 @@ All notable changes to this project will be documented in this file.
   machine name Claude Code reports to claude.ai for Remote Control, is the HA
   host's name (e.g. `homeassistant`) instead of the add-on slug
   (`d7e97e69-claudecode`). Nothing the add-on runs depends on the container
-  hostname; the AppArmor profile grants no `sys_admin`, so the host's name
-  cannot be changed from inside
+  hostname; the AppArmor profile grants no `sys_admin`, so a process in the
+  container cannot call `sethostname()`
 
 ## [1.2.76] - 2026-11-01
 
