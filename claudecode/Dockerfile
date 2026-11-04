@@ -185,6 +185,12 @@ RUN chmod +x /usr/local/bin/playwright-mcp-launch
 COPY rootfs/usr/local/bin/claude-login-url /usr/local/bin/claude-login-url
 RUN chmod +x /usr/local/bin/claude-login-url
 
+# ha-ws: sends commands to Home Assistant's WebSocket API through the Supervisor
+# proxy (registry updates, lovelace/config/save, ... that the REST API lacks and
+# that must not be done by editing .storage/ while HA runs). Stdlib only.
+COPY rootfs/usr/local/bin/ha-ws /usr/local/bin/ha-ws
+RUN chmod +x /usr/local/bin/ha-ws
+
 # Ensure .bashrc is sourced for login shells too
 RUN echo 'source ~/.bashrc' > /root/.profile
 

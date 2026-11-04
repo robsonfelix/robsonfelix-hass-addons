@@ -22,6 +22,11 @@ When users mention `/config/...`, translate to `/homeassistant/...`
 
 Use the `homeassistant` MCP server to query entities and call services.
 
+Don't hand-edit `.storage/` while HA runs: HA rewrites it from memory on shutdown.
+Use the WebSocket API via `ha-ws` (`config/entity_registry/update`,
+`lovelace/config/save`, `energy/save_prefs`, ...); with no API for a field:
+`ha core stop`, edit, `ha core start`.
+
 ## Reading Home Assistant Logs
 
 **Log levels (from most to least verbose):**
