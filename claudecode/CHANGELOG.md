@@ -12,6 +12,22 @@ All notable changes to this project will be documented in this file.
   overrides for its paths and the Supervisor address so the tests can point it
   at a scratch directory; the defaults are unchanged
 
+### Changed
+- `config.yaml` now declares `image: ghcr.io/robsonfelix/claudecode-{arch}`, so
+  the Supervisor pulls the published image instead of compiling the add-on on
+  every user's machine. A fresh install took around seven minutes of local build
+  and now takes as long as a download. The images were already being published
+  by CI on each release tag; nothing read them, because without `image:` the
+  Supervisor ignores the registry entirely
+- Startup re-runs `install-claude.sh` when the Claude Code baked into the image
+  does not run on the host. This replaces what the local build used to do for
+  free: the version is chosen by a smoke test, and with a prebuilt image that
+  test runs on CI hardware, which always has AVX and so cannot speak for the
+  user's CPU. On a host without AVX the baked CLI would hang, and the previous
+  behaviour - skip the update, keep the baked version - would have left the
+  add-on unusable. The search now happens once per add-on update, at startup,
+  on the machine that actually has to run it
+
 ## [1.2.76] - 2026-11-01
 
 ### Fixed

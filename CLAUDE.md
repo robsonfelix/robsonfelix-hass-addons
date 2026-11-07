@@ -35,10 +35,32 @@ directory. A single module: `make test P=test_login_url.py`. Dotted module names
 
 ## Version Bumping
 
-When making changes that require a new release:
-1. Update version in `claudecode/config.yaml`
-2. Add entry to `claudecode/CHANGELOG.md`
-3. Commit and push
+Every add-on declares `image: ghcr.io/robsonfelix/<addon>-{arch}` in its
+`config.yaml`, so the Supervisor **pulls** that image and never builds locally.
+That makes the release order load-bearing: if `main` announces a version whose
+image is not in the registry yet, every install and update of that add-on fails
+outright, with no local-build fallback to save it.
+
+So push the tag **before** the branch:
+
+1. Update the version in `<addon>/config.yaml`
+2. Add an entry to `<addon>/CHANGELOG.md`
+3. Commit, but do not push the branch yet
+4. `git push origin <addon>/v<version>` - the tag carries the commit, CI builds
+   it and publishes `<addon>-{arch}:<version>` to ghcr.io
+5. Wait for that workflow to go green, then `git push origin main`
+
+Done in this order nobody ever sees a version whose image does not exist. Confirm
+the image landed before step 5:
+
+```bash
+t=$(curl -s "https://ghcr.io/token?scope=repository:robsonfelix/<addon>-amd64:pull&service=ghcr.io" | jq -r .token)
+curl -s -H "Authorization: Bearer $t" "https://ghcr.io/v2/robsonfelix/<addon>-amd64/tags/list" | jq .tags
+```
+
+A change that touches only `config.yaml` (and not the image contents) needs no
+bump at all - the Supervisor reads `config.yaml` from the store, so it reaches
+new installs on the next repository refresh.
 
 ## Home Assistant Add-on Notes
 

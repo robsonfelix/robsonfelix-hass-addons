@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- `config.yaml` now declares `image: ghcr.io/robsonfelix/auto-monocle-{arch}`,
+  so the Supervisor pulls the image CI already publishes instead of building
+  the add-on locally. No version bump: the published `0.1.12` image matches the
+  version on main, and the Supervisor reads `config.yaml` from the store, so
+  new installs pull it immediately
+
 ## [0.1.12] - 2026-11-01
 
 ### Fixed

@@ -98,6 +98,10 @@ COPY --from=ttyd-client /ttyd/html/dist/inline.html /usr/share/ttyd/index.html
 # SIGILL). Fix that at the hypervisor (Proxmox CPU type "host"), not here.
 # No version is hardcoded: take latest when it runs, otherwise the newest
 # release that passes a smoke test, so the add-on still builds on such hosts.
+# Since config.yaml declares `image:`, users pull this image rather than building
+# it, so this smoke test runs on CI hardware - which always has AVX and therefore
+# cannot speak for the user's CPU. The startup script re-runs this same script
+# when the baked CLI turns out not to run on the host it landed on.
 COPY stdin-runner.sh /usr/local/bin/stdin-runner.sh
 RUN chmod +x /usr/local/bin/stdin-runner.sh
 
@@ -240,6 +244,15 @@ CMD ["/bin/bash", "-c", "\
       echo '[WARN] On Proxmox set the VM CPU type to \"host\" (or x86-64-v3), then fully'; \
       echo '[WARN] stop and start the VM. Verify with: grep -o -m1 avx2 /proc/cpuinfo'; \
     fi; \
+  fi && \
+  if ! timeout 30 claude --version < /dev/null > /dev/null 2>&1; then \
+    echo '[WARN] The Claude Code baked into this image does not run on this host.'; \
+    echo '[WARN] The add-on ships prebuilt images, and the build-time smoke test that'; \
+    echo '[WARN] picks a version runs on a CI machine, which always has AVX - so it'; \
+    echo '[WARN] cannot see your CPU. Searching for the newest release that does run'; \
+    echo '[WARN] here; this downloads several candidates and takes a few minutes.'; \
+    echo '[WARN] It happens once per add-on update, not on every restart.'; \
+    /usr/local/bin/install-claude.sh || echo '[ERROR] No working Claude Code release found'; \
   fi && \
   BUILT_VERSION=$(cat /etc/claude-code-version 2>/dev/null || echo unknown) && \
   INSTALLED_VERSION= && \
